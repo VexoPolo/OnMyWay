@@ -86,8 +86,14 @@ export function ProfileScreen() {
       </View>
 
       <View style={s.bottom}>
-        <Button title="Clear demo orders" variant="ghost" onPress={resetOrders} />
-        <Button title="Sign out" variant="danger" onPress={signOut} />
+        <Button
+          title="Sign out"
+          variant="danger"
+          onPress={() => {
+            resetOrders(); // orders are device-local only; a shared phone must start clean for the next student
+            signOut();
+          }}
+        />
       </View>
     </Screen>
   );
