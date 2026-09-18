@@ -19,7 +19,6 @@ export type AppStackParams = {
   Searching: { orderId: string };
   Track: { orderId: string };
   Handover: { orderId: string };
-  Pay: { orderId: string };
   Delivered: { orderId: string };
   CourierJob: { orderId: string };
 };

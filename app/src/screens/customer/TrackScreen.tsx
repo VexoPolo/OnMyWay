@@ -25,8 +25,7 @@ export function TrackScreen({ navigation, route }: Props) {
   useEffect(() => {
     if (!order) return;
     if (order.state === 'ARRIVED') navigation.replace('Handover', { orderId });
-    if (order.state === 'CONFIRMATION_RECEIVED') navigation.replace('Pay', { orderId });
-    if (order.state === 'PAID' || order.state === 'DELIVERED') navigation.replace('Delivered', { orderId });
+    if (order.state === 'DELIVERED') navigation.replace('Delivered', { orderId });
     if (order.state === 'CANCELLED') navigation.popToTop();
   }, [order?.state, navigation, orderId, order]);
 

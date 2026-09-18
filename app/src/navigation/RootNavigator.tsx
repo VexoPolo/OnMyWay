@@ -13,7 +13,6 @@ import { CourierJobScreen } from '../screens/courier/CourierJobScreen';
 import { DeliveredScreen } from '../screens/customer/DeliveredScreen';
 import { HandoverScreen } from '../screens/customer/HandoverScreen';
 import { NewOrderScreen } from '../screens/customer/NewOrderScreen';
-import { PayScreen } from '../screens/customer/PayScreen';
 import { SearchingScreen } from '../screens/customer/SearchingScreen';
 import { TrackScreen } from '../screens/customer/TrackScreen';
 import { useAuth } from '../store/auth';
@@ -82,7 +81,6 @@ export function RootNavigator() {
           <App.Screen name="Searching" component={SearchingScreen} options={{ gestureEnabled: false }} />
           <App.Screen name="Track" component={TrackScreen} />
           <App.Screen name="Handover" component={HandoverScreen} options={{ gestureEnabled: false }} />
-          <App.Screen name="Pay" component={PayScreen} options={{ gestureEnabled: false }} />
           <App.Screen name="Delivered" component={DeliveredScreen} />
           <App.Screen name="CourierJob" component={CourierJobScreen} />
         </App.Navigator>

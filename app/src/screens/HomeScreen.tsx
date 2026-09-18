@@ -12,7 +12,7 @@ import { useAuth } from '../store/auth';
 import { useOrders } from '../store/orders';
 import { colors, space } from '../theme';
 
-const ACTIVE = new Set(['ORDER_PLACED', 'AGENT_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'ARRIVED', 'CONFIRMATION_RECEIVED', 'PAID']);
+const ACTIVE = new Set(['ORDER_PLACED', 'AGENT_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'ARRIVED']);
 
 export function HomeScreen() {
   const user = useAuth((s) => s.user)!;
@@ -113,15 +113,12 @@ function CourierHome() {
   );
 }
 
-export function routeFor(state: string): 'Searching' | 'Track' | 'Handover' | 'Pay' | 'Delivered' {
+export function routeFor(state: string): 'Searching' | 'Track' | 'Handover' | 'Delivered' {
   switch (state) {
     case 'ORDER_PLACED':
       return 'Searching';
     case 'ARRIVED':
       return 'Handover';
-    case 'CONFIRMATION_RECEIVED':
-      return 'Pay';
-    case 'PAID':
     case 'DELIVERED':
       return 'Delivered';
     default:

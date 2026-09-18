@@ -1,5 +1,4 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -14,12 +13,6 @@ type Props = NativeStackScreenProps<AppStackParams, 'Delivered'>;
 export function DeliveredScreen({ navigation, route }: Props) {
   const { orderId } = route.params;
   const order = useOrders((s) => s.orders[orderId]);
-  const advance = useOrders((s) => s.advance);
-
-  // PAID → DELIVERED closes the order.
-  useEffect(() => {
-    if (order?.state === 'PAID') advance(orderId);
-  }, [order?.state, advance, orderId]);
 
   if (!order) return null;
   const mins = Math.max(1, Math.round((order.updatedAt - order.createdAt) / 60000));
@@ -42,7 +35,7 @@ export function DeliveredScreen({ navigation, route }: Props) {
         <Row k="Order" v={order.id} />
         <Row k="Route" v={`${order.pickup} → ${order.dropoff}`} />
         <Row k="Courier" v={order.courierRegNo ?? '—'} />
-        <Row k="Paid" v={`₹${order.fare}`} />
+        <Row k="Fare" v={`₹${order.fare}`} />
       </Card>
       <Button title="Done" onPress={() => navigation.popToTop()} />
     </Screen>

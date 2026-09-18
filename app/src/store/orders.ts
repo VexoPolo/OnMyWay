@@ -16,9 +16,7 @@ const NEXT: Partial<Record<OrderState, OrderState>> = {
   AGENT_ASSIGNED: 'PICKED_UP',
   PICKED_UP: 'OUT_FOR_DELIVERY',
   OUT_FOR_DELIVERY: 'ARRIVED',
-  ARRIVED: 'CONFIRMATION_RECEIVED',
-  CONFIRMATION_RECEIVED: 'PAID',
-  PAID: 'DELIVERED',
+  ARRIVED: 'DELIVERED',
 };
 
 interface OrdersState {
@@ -29,7 +27,6 @@ interface OrdersState {
   advance: (orderId: string) => void;
   arrive: (orderId: string) => string; // generates OTP, returns code (customer side reads it)
   confirmHandover: (orderId: string, code: string) => 'ok' | 'wrong' | 'expired';
-  markPaid: (orderId: string) => void;
   cancel: (orderId: string) => void;
   reset: () => void;
 }
@@ -90,16 +87,10 @@ export const useOrders = create<OrdersState>()(
         if (now() > o.otp.expiresAt) return 'expired';
         if (o.otp.code !== code) return 'wrong';
         set((s) => ({
-          orders: { ...s.orders, [orderId]: { ...o, state: 'CONFIRMATION_RECEIVED', updatedAt: now() } },
+          orders: { ...s.orders, [orderId]: { ...o, state: 'DELIVERED', updatedAt: now() } }, // payment is out of scope for now: a confirmed handover closes the order
         }));
         return 'ok';
       },
-      markPaid: (orderId) =>
-        set((s) => {
-          const o = s.orders[orderId];
-          if (!o) return {};
-          return { orders: { ...s.orders, [orderId]: { ...o, state: 'PAID', updatedAt: now() } } };
-        }),
       cancel: (orderId) =>
         set((s) => {
           const o = s.orders[orderId];

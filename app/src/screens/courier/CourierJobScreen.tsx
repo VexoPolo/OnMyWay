@@ -58,9 +58,6 @@ export function CourierJobScreen({ navigation, route }: Props) {
             <Button title="Verify handover" onPress={onVerify} disabled={code.length < 6} />
           </View>
         );
-      case 'CONFIRMATION_RECEIVED':
-        return <T kind="caption">Waiting for the customer to pay…</T>;
-      case 'PAID':
       case 'DELIVERED':
         return <Button title="Done" onPress={() => navigation.popToTop()} />;
       default:

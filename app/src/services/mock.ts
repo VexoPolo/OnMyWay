@@ -28,12 +28,6 @@ export const api = {
     await wait(2500 + Math.random() * 2000);
     return { regNo: '22BCE0419', name: 'Aarav', etaMin: 8 };
   },
-
-  /** Payment: QR → UPI → webhook. Resolves when the "webhook" confirms. */
-  async pay(orderId: string, amount: number): Promise<{ ok: true; ref: string }> {
-    await wait(1800);
-    return { ok: true, ref: 'UPI' + Date.now().toString().slice(-8) };
-  },
 };
 
 export const CAMPUS_PLACES = [
