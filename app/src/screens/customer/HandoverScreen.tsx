@@ -1,6 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Screen } from '../../components/Screen';
 import { T } from '../../components/Text';
@@ -15,8 +16,10 @@ type Props = NativeStackScreenProps<AppStackParams, 'Handover'>;
 export function HandoverScreen({ navigation, route }: Props) {
   const { orderId } = route.params;
   const order = useOrders((s) => s.orders[orderId]);
+  const refresh = useOrders((s) => s.arrive); // re-arriving issues a fresh 5-minute code
   useMockCourier(orderId);
   const [left, setLeft] = useState('');
+  const expired = left === '0:00';
 
   useEffect(() => {
     if (!order?.otp) return;
@@ -63,6 +66,15 @@ export function HandoverScreen({ navigation, route }: Props) {
           <T kind="state">DELIVERED</T>
         </View>
       </Card>
+      {expired && (
+        <>
+          <T kind="caption" style={{ color: colors.error, textAlign: 'center' }}>
+            This code has expired.
+          </T>
+          <Button title="Get a fresh code" onPress={() => refresh(orderId)} />
+        </>
+      )}
+      <Button title="Back to home" variant="ghost" onPress={() => navigation.popToTop()} style={{ marginTop: 'auto' }} />
     </Screen>
   );
 }
