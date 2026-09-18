@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OnMyWay — Onboarding Frames</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ground:#0A0A0A;
+    --surface:#171717;
+    --line:#232326;
+    --brand-a:#FCD34D;
+    --brand-b:#F59E0B;
+    --on-brand:#1F1300;
+    --brand-dark:#FBBF24;
+    --muted:#8a8a90;
+    --ink:#F4F4F5;
+    --error:#EF4444;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(120% 80% at 50% 0%, rgba(245,158,11,.08), transparent 55%),
+      var(--ground);
+    min-height:100svh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:28px;
+    padding:48px 20px;
+    font-family:'IBM Plex Sans',sans-serif;
+    color:var(--ink);
+  }
+  .page-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:.08em;
+    color:var(--muted);
+    text-align:center;
+  }
+  .page-label b{color:var(--brand-dark);font-weight:500;}
+
+  .frames-row{
+    display:flex;
+    gap:40px;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  .frame-col{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+  }
+  .frame-title{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    letter-spacing:.04em;
+  }
+  .frame-title b{color:var(--ink);font-weight:600;}
+
+  .device{
+    width:390px;
+    height:844px;
+    padding:11px;
+    border-radius:58px;
+    background:linear-gradient(150deg,#2c2c31,#131316 45%,#2a2a2f);
+    box-shadow:0 44px 90px -30px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.05);
+    position:relative;
+  }
+  .viewport{
+    position:relative;
+    width:100%;
+    height:100%;
+    border-radius:48px;
+    overflow:hidden;
+    background:var(--ground);
+  }
+  .island{
+    position:absolute;
+    top:14px;left:50%;transform:translateX(-50%);
+    width:104px;height:30px;
+    background:#000;
+    border-radius:16px;
+    z-index:6;
+  }
+  .statusbar{
+    position:absolute;
+    top:16px;left:0;right:0;
+    display:flex;
+    justify-content:space-between;
+    padding:0 30px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    font-weight:500;
+    color:var(--ink);
+    z-index:6;
+    pointer-events:none;
+  }
+  .home-indicator{
+    position:absolute;
+    bottom:8px;left:50%;transform:translateX(-50%);
+    width:134px;height:5px;
+    background:rgba(255,255,255,.35);
+    border-radius:3px;
+    z-index:6;
+  }
+
+  .screen{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    overflow-y:auto;
+  }
+
+  /* ============ FRAME 1: Registration ============ */
+  #registration{padding:62px 22px 30px;}
+
+  .progress-dots{display:flex;gap:6px;margin-bottom:24px;}
+  .progress-dots span{
+    width:22px;height:4px;border-radius:2px;
+    background:var(--line);
+  }
+  .progress-dots span.active{
+    background:linear-gradient(90deg,var(--brand-a),var(--brand-b));
+  }
+
+  h1{
+    font-family:'Archivo',sans-serif;
+    font-weight:900;
+    letter-spacing:-.02em;
+    line-height:1.1;
+    font-size:26px;
+    margin-bottom:8px;
+  }
+  .sub{
+    font-size:13.5px;
+    line-height:1.5;
+    color:var(--muted);
+    max-width:30ch;
+    margin-bottom:26px;
+  }
+
+  label{
+    font-size:12.5px;
+    font-weight:500;
+    color:var(--muted);
+    display:block;
+    margin-bottom:7px;
+  }
+  .hint{
+    font-size:11px;
+    color:var(--muted);
+    margin-top:6px;
+  }
+  .field{margin-bottom:18px;}
+  input[type="text"], select{
+    width:100%;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:15px;
+    color:var(--ink);
+    outline:none;
+  }
+  input[type="text"]:focus, select:focus{border-color:var(--brand-b);}
+  select{appearance:none;-webkit-appearance:none;}
+
+  .picker-field{
+    width:100%;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:15px;
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    cursor:pointer;
+  }
+  .picker-field .ph{color:var(--muted);}
+  .picker-field.filled .ph{color:var(--ink);}
+  .picker-field .chev{color:var(--muted);font-size:12px;}
+
+  .upload-box{
+    border:1.5px dashed var(--line);
+    border-radius:14px;
+    padding:22px 16px;
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+  }
+  .upload-icon{
+    width:38px;height:38px;
+    border-radius:10px;
+    background:var(--surface);
+    display:flex;align-items:center;justify-content:center;
+    font-size:17px;
+  }
+  .upload-box .u-title{font-size:13.5px;font-weight:500;}
+  .upload-box .u-sub{font-size:11.5px;color:var(--muted);}
+
+  .trust-note{
+    display:flex;
+    gap:8px;
+    align-items:flex-start;
+    background:rgba(252,211,77,.06);
+    border:1px solid rgba(252,211,77,.18);
+    border-radius:10px;
+    padding:10px 12px;
+    margin-top:16px;
+  }
+  .trust-note .lock{font-size:13px;color:var(--brand-dark);flex-shrink:0;}
+  .trust-note p{font-size:11.5px;color:var(--muted);line-height:1.4;}
+
+  .spacer{flex:1;}
+  .btn-primary{
+    width:100%;
+    padding:16px;
+    border-radius:13px;
+    border:none;
+    background:linear-gradient(135deg,var(--brand-a),var(--brand-b));
+    color:var(--on-brand);
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    margin-top:10px;
+  }
+  .btn-primary.disabled{
+    background:var(--surface);
+    color:var(--muted);
+    border:1px solid var(--line);
+  }
+  .footer-note{
+    text-align:center;
+    font-size:12px;
+    color:var(--muted);
+    margin-top:14px;
+  }
+  .footer-note b{color:var(--brand-dark);font-weight:500;}
+
+  /* ---- hostel block picker sheet ---- */
+  .sheet-backdrop{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,.55);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease;
+    z-index:25;
+  }
+  .sheet-backdrop.open{opacity:1;pointer-events:auto;}
+
+  .bottom-sheet{
+    position:absolute;
+    left:0;right:0;bottom:0;
+    height:72%;
+    background:var(--surface);
+    border-top:1px solid var(--line);
+    border-radius:22px 22px 0 0;
+    box-shadow:0 -20px 50px rgba(0,0,0,.5);
+    transform:translateY(100%);
+    transition:transform .32s cubic-bezier(.32,.72,0,1);
+    z-index:26;
+    display:flex;
+    flex-direction:column;
+    padding:10px 18px 18px;
+  }
+  .bottom-sheet.open{transform:translateY(0);}
+
+  .sheet-handle{
+    width:36px;height:4px;
+    background:var(--line);
+    border-radius:2px;
+    margin:2px auto 12px;
+  }
+  .sheet-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .sheet-header h3{
+    font-family:'Archivo',sans-serif;
+    font-weight:800;
+    font-size:17px;
+  }
+  .sheet-close{
+    width:28px;height:28px;
+    border-radius:8px;
+    background:var(--ground);
+    border:1px solid var(--line);
+    color:var(--muted);
+    font-size:12px;
+    cursor:pointer;
+  }
+
+  .segmented{
+    display:flex;
+    gap:4px;
+    background:var(--ground);
+    border:1px solid var(--line);
+    border-radius:11px;
+    padding:4px;
+    margin-bottom:12px;
+  }
+  .seg-btn{
+    flex:1;
+    padding:9px 0;
+    border:none;
+    border-radius:8px;
+    background:transparent;
+    color:var(--muted);
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:12.5px;
+    font-weight:500;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+  }
+  .seg-btn.active{
+    background:linear-gradient(135deg,var(--brand-a),var(--brand-b));
+    color:var(--on-brand);
+    font-weight:600;
+  }
+
+  .sheet-search{margin-bottom:10px;}
+  .sheet-search input{
+    width:100%;
+    background:var(--ground);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:11px 13px;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:13.5px;
+    color:var(--ink);
+    outline:none;
+  }
+  .sheet-search input:focus{border-color:var(--brand-b);}
+
+  .block-list{
+    flex:1;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .block-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px 13px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:var(--ground);
+    cursor:pointer;
+    font-size:14px;
+  }
+  .block-row:hover{border-color:var(--brand-b);}
+  .block-row .code{font-weight:500;}
+  .block-row .tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    color:var(--muted);
+  }
+  .block-row.selected{
+    border-color:var(--brand-b);
+    background:rgba(252,211,77,.07);
+  }
+  .block-empty{
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+    padding:30px 0;
+  }
+
+  /* ============ FRAME 2: Role Choice ============ */
+  #rolechoice{padding:0;}
+  .half{
+    flex:1;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:0 30px;
+    gap:10px;
+  }
+  .half.agent{
+    background:
+      radial-gradient(130% 110% at 50% 0%, rgba(252,211,77,.45), rgba(245,158,11,.28) 35%, transparent 72%),
+      var(--ground);
+    border-bottom:1px solid var(--line);
+  }
+  .half.order{
+    background:
+      radial-gradient(120% 100% at 50% 100%, rgba(245,158,11,.10), transparent 65%),
+      var(--ground);
+  }
+  .half-icon{
+    width:56px;height:56px;
+    border-radius:16px;
+    background:linear-gradient(135deg,var(--brand-a),var(--brand-b));
+    display:flex;align-items:center;justify-content:center;
+    font-size:26px;
+    margin-bottom:6px;
+  }
+  .half h2{
+    font-family:'Archivo',sans-serif;
+    font-weight:900;
+    font-size:22px;
+    letter-spacing:-.01em;
+  }
+  .half p{
+    font-size:13px;
+    color:var(--muted);
+    max-width:26ch;
+    line-height:1.45;
+  }
+  .half .chip{
+    margin-top:6px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    color:var(--brand-dark);
+    background:rgba(252,211,77,.09);
+    border:1px solid rgba(252,211,77,.22);
+    border-radius:6px;
+    padding:4px 9px;
+  }
+  .divider-label{
+    position:absolute;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    background:var(--ground);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:5px 12px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    color:var(--muted);
+    z-index:5;
+    letter-spacing:.04em;
+  }
+
+  /* ============ FRAME 3: Delivery Agent — Pickup ============ */
+  #pickup{padding:62px 22px 30px;gap:0;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .back{width:32px;height:32px;border-radius:9px;background:var(--surface);border:1px solid var(--line);color:var(--ink);font-size:14px;cursor:pointer;}
+  .status-chip{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--brand-dark);background:rgba(252,211,77,.09);border:1px solid rgba(252,211,77,.22);border-radius:6px;padding:4px 9px;}
+  .section-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:var(--muted);margin:0 0 8px;text-transform:uppercase;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px 14px;margin-bottom:18px;}
+  .row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);font-size:13.5px;}
+  .row:last-child{border-bottom:none;}
+  .row .k{color:var(--muted);}
+  .row .v{font-weight:500;text-align:right;}
+  .row .v.mono{font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+  .size-tag{font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);background:var(--ground);}
+  .size-tag.large{color:var(--brand-dark);border-color:rgba(252,211,77,.3);}
+  .otp-box{background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:16px;text-align:center;margin-bottom:12px;}
+  .otp-box .o-title{font-size:13.5px;font-weight:500;margin-bottom:4px;}
+  .otp-box .o-sub{font-size:11.5px;color:var(--muted);line-height:1.4;}
+  .otp-box .o-code{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:500;letter-spacing:.18em;color:var(--brand-dark);margin:10px 0 4px;display:none;}
+  .otp-box.received{border-style:solid;border-color:rgba(252,211,77,.3);}
+  .otp-box.received .o-code{display:block;}
+  .btn-primary.requested{background:var(--surface);color:var(--brand-dark);border:1px solid rgba(252,211,77,.3);}
+
+  /* ============ FRAME 4: Place Order ============ */
+  #placeorder{padding:62px 22px 30px;gap:0;}
+  .otp-toggle-row{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:14px 16px;margin:6px 0 18px;
+  }
+  .otp-toggle-title{font-size:13.5px;font-weight:500;margin-bottom:3px;}
+  .otp-toggle-sub{font-size:11.5px;color:var(--muted);line-height:1.4;max-width:21ch;}
+  .switch{
+    position:relative;flex-shrink:0;width:46px;height:26px;border-radius:13px;
+    border:1px solid var(--line);background:var(--ground);cursor:pointer;padding:0;
+    transition:background .2s ease, border-color .2s ease;
+  }
+  .switch .knob{
+    position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
+    background:#fff;transition:transform .2s cubic-bezier(.32,.72,0,1);
+    box-shadow:0 1px 3px rgba(0,0,0,.4);
+  }
+  .switch.on{background:linear-gradient(135deg,var(--brand-a),var(--brand-b));border-color:transparent;}
+  .switch.on .knob{transform:translateX(20px);}
+  .otp-entry{animation:fadeSlideIn .22s ease;}
+  .otp-entry input{letter-spacing:.3em;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:17px;}
+  @keyframes fadeSlideIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+
+  <div class="page-label">OnMyWay &nbsp;·&nbsp; onboarding frames &nbsp;·&nbsp; <b>UI/UX #1</b></div>
+
+  <div class="frames-row">
+
+    <!-- FRAME 1 -->
+    <div class="frame-col">
+      <div class="frame-title">Frame 1 &nbsp;·&nbsp; <b>Registration</b></div>
+      <div class="device">
+        <div class="viewport">
+          <div class="island"></div>
+          <div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
+          <div class="screen" id="registration">
+            <div class="progress-dots">
+              <span class="active"></span><span></span><span></span>
+            </div>
+            <h1>Verify you're one of us</h1>
+            <p class="sub">A few details to confirm you're a student here — takes a minute.</p>
+
+            <div class="field">
+              <label>Full name</label>
+              <input type="text" placeholder="As on your ID card">
+            </div>
+
+            <div class="field">
+              <label>Registration number</label>
+              <input type="text" placeholder="e.g. 24BCE1234">
+              <div class="hint">As on your ID card — we'll cross-check this</div>
+            </div>
+
+            <div class="field">
+              <label>VIT email ID</label>
+              <input type="text" placeholder="yourname@vitstudent.ac.in">
+              <div class="hint">Must be your official @vitstudent.ac.in address</div>
+            </div>
+
+            <div class="field">
+              <label>Phone number</label>
+              <input type="text" placeholder="+91 98765 43210">
+              <div class="hint">Used for delivery updates and OTP verification</div>
+            </div>
+
+            <div class="field">
+              <label>Hostel block</label>
+              <button class="picker-field" id="blockPickerBtn" type="button">
+                <span id="blockPickerValue" class="ph">Select your block</span>
+                <span class="chev">▾</span>
+              </button>
+            </div>
+
+            <div class="field">
+              <label>ID card</label>
+              <div class="upload-box">
+                <div class="upload-icon">📷</div>
+                <div class="u-title">Scan or upload your ID</div>
+                <div class="u-sub">Clear photo, all corners visible</div>
+              </div>
+            </div>
+
+            <div class="trust-note">
+              <span class="lock">🔒</span>
+              <p>Used only to verify you're a student here — never shown to other users.</p>
+            </div>
+
+            <div class="spacer"></div>
+            <button class="btn-primary disabled">Continue</button>
+            <div class="footer-note">Step 1 of 3 &nbsp;·&nbsp; next: <b>verify OTP</b></div>
+          </div>
+
+          <!-- HOSTEL BLOCK PICKER — BOTTOM SHEET -->
+          <div class="sheet-backdrop" id="sheetBackdrop"></div>
+          <div class="bottom-sheet" id="blockSheet">
+            <div class="sheet-handle"></div>
+            <div class="sheet-header">
+              <h3>Select your block</h3>
+              <button class="sheet-close" id="sheetClose" type="button">✕</button>
+            </div>
+            <div class="segmented" id="segmented">
+              <button class="seg-btn active" data-hostel="MH" type="button">Men's Hostel</button>
+              <button class="seg-btn" data-hostel="LH" type="button">Ladies Hostel</button>
+            </div>
+            <div class="sheet-search">
+              <input type="text" id="blockSearch" placeholder="Search block (e.g. F, D-ANX)">
+            </div>
+            <div class="block-list" id="blockList"></div>
+          </div>
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="frame-col">
+      <div class="frame-title">Frame 2 &nbsp;·&nbsp; <b>Role Choice</b></div>
+      <div class="device">
+        <div class="viewport">
+          <div class="island"></div>
+          <div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
+          <div class="screen" id="rolechoice" style="flex-direction:column;">
+            <div style="position:relative;flex:1;display:flex;flex-direction:column;">
+              <div class="half agent">
+                <div class="half-icon">🛵</div>
+                <h2>Deliver &amp; earn</h2>
+                <p>Pick up parcels on your way back to the block</p>
+                <div class="chip">~₹40 per pickup</div>
+              </div>
+              <div class="divider-label">OR</div>
+              <div class="half order">
+                <div class="half-icon">📦</div>
+                <h2>Get something delivered</h2>
+                <p>Skip the walk to the gate — someone's already headed your way</p>
+                <div class="chip">Avg. wait ~20 min</div>
+              </div>
+            </div>
+          </div>
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="frame-col">
+      <div class="frame-title">Frame 3 &nbsp;·&nbsp; <b>Delivery Agent · Pickup</b></div>
+      <div class="device">
+        <div class="viewport">
+          <div class="island"></div>
+          <div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
+          <div class="screen" id="pickup">
+            <div class="topbar">
+              <button class="back" type="button">‹</button>
+              <span class="status-chip">Order accepted</span>
+            </div>
+            <h1>Pick up the parcel</h1>
+            <p class="sub">Tell us where you are, then ask the orderer for the OTP.</p>
+
+            <div class="section-label">Where are you?</div>
+            <div class="segmented" id="pickupPoint">
+              <button class="seg-btn active" type="button">Main Gate</button>
+              <button class="seg-btn" type="button">Amazon Pick Up Point</button>
+            </div>
+
+            <div class="section-label" style="margin-top:8px;">Order details</div>
+            <div class="card">
+              <div class="row"><span class="k">Tracker ID</span><span class="v mono">TBA3049182765</span></div>
+              <div class="row"><span class="k">Platform</span><span class="v">Amazon</span></div>
+              <div class="row"><span class="k">Parcel size</span><span class="v"><span class="size-tag">Regular</span></span></div>
+              <div class="row"><span class="k">Ordered by</span><span class="v">Aarav M.</span></div>
+              <div class="row"><span class="k">Drop-off</span><span class="v">MH-F block</span></div>
+              <div class="row"><span class="k">Delivery driver</span><span class="v">Ramesh K.</span></div>
+              <div class="row"><span class="k">Driver phone</span><span class="v mono">+91 9XXXX 21847</span></div>
+              <div class="row"><span class="k">You earn</span><span class="v">₹40</span></div>
+            </div>
+
+            <div class="section-label">OTP</div>
+            <div class="otp-box" id="otpBox">
+              <div class="o-title" id="otpTitle">Not requested yet</div>
+              <div class="o-code" id="otpCode"></div>
+              <div class="o-sub" id="otpSub">The person who placed the order gets a push notification and shares the OTP with you here.</div>
+            </div>
+
+            <div class="spacer"></div>
+            <button class="btn-primary" id="otpBtn" type="button">Request OTP from Aarav</button>
+            <div class="footer-note">Show the OTP to the driver to collect the parcel</div>
+          </div>
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FRAME 4 -->
+    <div class="frame-col">
+      <div class="frame-title">Frame 4 &nbsp;·&nbsp; <b>Place Order</b></div>
+      <div class="device">
+        <div class="viewport">
+          <div class="island"></div>
+          <div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
+          <div class="screen" id="placeorder">
+            <div class="topbar">
+              <button class="back" type="button">‹</button>
+              <span class="status-chip">New order</span>
+            </div>
+            <h1>Place your order</h1>
+            <p class="sub">Tell us about the parcel so a courier can find and carry it.</p>
+
+            <div class="section-label">Parcel size</div>
+            <div class="segmented" id="parcelSize">
+              <button class="seg-btn active" type="button">Regular</button>
+              <button class="seg-btn" type="button">Large</button>
+            </div>
+
+            <div class="field" style="margin-top:18px;">
+              <label>Tracking ID</label>
+              <input type="text" placeholder="e.g. TBA3049182765">
+              <div class="hint">From the courier app or order confirmation SMS</div>
+            </div>
+
+            <div class="otp-toggle-row">
+              <div>
+                <div class="otp-toggle-title">Needs an OTP to collect?</div>
+                <div class="otp-toggle-sub">Turn this on if the platform gives a pickup code</div>
+              </div>
+              <button class="switch" id="otpToggle" type="button" role="switch" aria-checked="false">
+                <span class="knob"></span>
+              </button>
+            </div>
+
+            <div class="field otp-entry" id="otpEntryField" style="display:none;">
+              <label>Enter OTP</label>
+              <input type="text" inputmode="numeric" maxlength="6" placeholder="· · · · · ·">
+              <div class="hint">You'll get this from the delivery platform — pass it on to your courier</div>
+            </div>
+
+            <div class="spacer"></div>
+            <button class="btn-primary" type="button">Confirm order</button>
+            <div class="footer-note">A courier heading your way will pick this up</div>
+          </div>
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+
+<script>
+  const MH_BLOCKS = ['A','B','B-ANX','C','D','D-ANX','E','F','G','H','J','K','L','M','N','P','Q','R','T'];
+  const LH_BLOCKS = ['A','B','C','D','E','E-ANX','F','G','H','J','S'];
+
+  const btn = document.getElementById('blockPickerBtn');
+  const backdrop = document.getElementById('sheetBackdrop');
+  const sheet = document.getElementById('blockSheet');
+  const closeBtn = document.getElementById('sheetClose');
+  const segBtns = document.querySelectorAll('.seg-btn');
+  const searchInput = document.getElementById('blockSearch');
+  const listEl = document.getElementById('blockList');
+  const valueEl = document.getElementById('blockPickerValue');
+
+  let activeHostel = 'MH';
+  let selectedBlock = null;
+
+  function renderList(){
+    const source = activeHostel === 'MH' ? MH_BLOCKS : LH_BLOCKS;
+    const q = searchInput.value.trim().toUpperCase();
+    const filtered = source.filter(b => b.includes(q));
+    listEl.innerHTML = '';
+    if(filtered.length === 0){
+      listEl.innerHTML = '<div class="block-empty">No blocks match "'+ q +'"</div>';
+      return;
+    }
+    filtered.forEach(b => {
+      const code = activeHostel + '-' + b;
+      const row = document.createElement('div');
+      row.className = 'block-row' + (selectedBlock === code ? ' selected' : '');
+      row.innerHTML = '<span class="code">'+ code +'</span><span class="tag">'+ (activeHostel==='MH' ? "Men's" : 'Ladies') +'</span>';
+      row.addEventListener('click', () => {
+        selectedBlock = code;
+        valueEl.textContent = code;
+        valueEl.classList.remove('ph');
+        btn.classList.add('filled');
+        closeSheet();
+      });
+      listEl.appendChild(row);
+    });
+  }
+
+  function openSheet(){
+    backdrop.classList.add('open');
+    sheet.classList.add('open');
+  }
+  function closeSheet(){
+    backdrop.classList.remove('open');
+    sheet.classList.remove('open');
+  }
+
+  btn.addEventListener('click', () => { renderList(); openSheet(); });
+  backdrop.addEventListener('click', closeSheet);
+  closeBtn.addEventListener('click', closeSheet);
+  searchInput.addEventListener('input', renderList);
+  segBtns.forEach(sb => {
+    sb.addEventListener('click', () => {
+      segBtns.forEach(s => s.classList.remove('active'));
+      sb.classList.add('active');
+      activeHostel = sb.dataset.hostel;
+      searchInput.value = '';
+      renderList();
+    });
+  });
+
+  renderList();
+
+  // Frame 3: pickup point toggle + OTP request (wireframe-only, fake timing)
+  document.querySelectorAll('#pickupPoint .seg-btn').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#pickupPoint .seg-btn').forEach(s => s.classList.remove('active'));
+    b.classList.add('active');
+  }));
+  const otpBtn = document.getElementById('otpBtn');
+  otpBtn.addEventListener('click', () => {
+    if(otpBtn.classList.contains('requested')) return;
+    otpBtn.classList.add('requested');
+    otpBtn.textContent = 'Requested · waiting for Aarav';
+    document.getElementById('otpTitle').textContent = 'Request sent';
+    document.getElementById('otpSub').textContent = 'Waiting for Aarav to share the OTP…';
+    setTimeout(() => {
+      document.getElementById('otpBox').classList.add('received');
+      document.getElementById('otpTitle').textContent = 'OTP from Aarav';
+      document.getElementById('otpCode').textContent = '58194';
+      document.getElementById('otpSub').textContent = 'Read this out to the driver.';
+      otpBtn.textContent = 'OTP received ✓';
+    }, 2000);
+  });
+
+  // Frame 4: parcel size toggle + conditional OTP field
+  document.querySelectorAll('#parcelSize .seg-btn').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#parcelSize .seg-btn').forEach(s => s.classList.remove('active'));
+    b.classList.add('active');
+  }));
+  const otpToggle = document.getElementById('otpToggle');
+  const otpEntryField = document.getElementById('otpEntryField');
+  otpToggle.addEventListener('click', () => {
+    const isOn = otpToggle.classList.toggle('on');
+    otpToggle.setAttribute('aria-checked', String(isOn));
+    otpEntryField.style.display = isOn ? 'block' : 'none';
+  });
+</script>
+</body>
+</html>
