@@ -25,10 +25,10 @@ export const api = {
 
   /**
    * Simulates the broadcast. A stand-in courier accepts only if nobody on this
-   * device has within 45 s — long enough to switch to Courier and accept yourself.
+   * device has within 2 min — long enough to switch to Courier and accept yourself.
    */
   async findCourier(): Promise<{ regNo: string; name: string; etaMin: number }> {
-    await wait(45_000);
+    await wait(120_000);
     return { regNo: '22BCE0419', name: 'Aarav', etaMin: 8 };
   },
 };
