@@ -1,18 +1,10 @@
 # OnMyWay — VINHACK
 
-Hackathon project folder for **VINHACK**. The product is **OnMyWay**, a campus peer-to-peer delivery marketplace (React Native / Expo). The reference material in `context/` still calls it **Yadhush** — same product, earlier name.
+Hackathon project folder for **VINHACK**. The product is **OnMyWay**, a campus peer-to-peer delivery marketplace (React Native / Expo).
 
 ## The idea in one line
 
 A parcel sits at the main gate. Walking there and back is twenty minutes. Someone else is already walking past. OnMyWay matches the two.
-
-## Context files (`context/`)
-
-| File | What it is |
-|---|---|
-| `Yadhush-Claude-Handoff.md` | **Read first.** Full project state as of 17 Sep 2026: product mechanics, standing rules, design tokens, what's built, what's open. |
-| `Yadhush-Landing-Page-BUILD-PROMPT.md` | Spec to rebuild the scroll-driven landing page from scratch, every constant spelled out. |
-| `onmyway-walkthrough.html` | The landing page — single self-contained file, rebranded to OnMyWay with the real logo embedded (base64). Active piece of work. |
 
 ## Standing rules (from the handoff — do not break)
 
@@ -86,7 +78,6 @@ Build order:
 ```
 OnMyWay/  (project root)
 ├── assets/logo/ the logo — see above
-├── context/     reference material (handoff, build prompt, landing page)
 ├── src/         app source
 ├── tests/
 └── docs/
