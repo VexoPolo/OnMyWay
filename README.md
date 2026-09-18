@@ -78,7 +78,7 @@ Build order:
 - `app/` — the phone app (Expo / React Native). `cd app && npm install && npx expo start`
 - `web/` — the earlier web client + Supabase backend work (Next.js at `web/`, Vite client at `web/client/`). `cd web && npm install && npm run dev`
 - `assets/logo/` — the logo
-- `context/`, `docs/` — reference material, design explorations
+- `docs/` — design explorations and the screen gallery (`docs/onmyway-screens.html`)
 - `OMW-onboarding-frames*.html` — VexoPolo's UI frame iterations (v1–v5)
 
 ## Folder layout

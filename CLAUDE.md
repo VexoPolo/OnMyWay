@@ -2,7 +2,7 @@
 
 Campus peer-to-peer delivery app for VINHACK. Expo/React Native app in `app/`.
 
-**Start here:** read `context/OnMyWay-Claude-Handoff.md` — full project state, standing rules, demo script, known gaps.
+**Start here:** read `.claude/OnMyWay-Claude-Handoff.md` (local, not in git) — full project state, standing rules, demo script, known gaps.
 
 Hard rules (details in the handoff §3):
 - Every screen is 390×844.
