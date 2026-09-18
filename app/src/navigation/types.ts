@@ -20,5 +20,5 @@ export type AppStackParams = {
   Track: { orderId: string };
   Handover: { orderId: string };
   Delivered: { orderId: string };
-  CourierJob: { orderId: string };
+  CourierJob: { orderId: string; point?: string };
 };

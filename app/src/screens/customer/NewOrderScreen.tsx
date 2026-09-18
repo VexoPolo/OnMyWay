@@ -1,134 +1,154 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Switch, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Field } from '../../components/Field';
-import { Route } from '../../components/OrderCard';
 import { Screen } from '../../components/Screen';
 import { T } from '../../components/Text';
 import type { AppStackParams } from '../../navigation/types';
-import { CAMPUS_PLACES, estimateKm } from '../../services/mock';
+import { PICKUP_POINTS, estimateKm, type PickupPoint } from '../../services/mock';
 import { useAuth } from '../../store/auth';
 import { quoteFare, useOrders } from '../../store/orders';
 import type { PackageSize } from '../../store/types';
-import { colors, radius, space } from '../../theme';
+import { colors, fonts, space } from '../../theme';
 
 type Props = NativeStackScreenProps<AppStackParams, 'NewOrder'>;
 
-const SIZES: { id: PackageSize; label: string; hint: string }[] = [
-  { id: 'S', label: 'S', hint: 'Envelope' },
-  { id: 'M', label: 'M', hint: 'Shoebox' },
-  { id: 'L', label: 'L', hint: 'Backpack' },
-  { id: 'XL', label: 'XL', hint: 'Two hands' },
+const SIZES: { id: PackageSize; label: string }[] = [
+  { id: 'M', label: 'Regular' },
+  { id: 'L', label: 'Large' },
 ];
 
+/** Frame 5 — Place your order. Drop-off is the student's own block from their profile. */
 export function NewOrderScreen({ navigation }: Props) {
   const user = useAuth((s) => s.user)!;
   const place = useOrders((s) => s.place);
   const [size, setSize] = useState<PackageSize>('M');
-  const [pickup, setPickup] = useState<string>('Main Gate');
-  const [dropoff, setDropoff] = useState<string>('Block C');
-  const [note, setNote] = useState('');
+  const [pickup, setPickup] = useState<PickupPoint>('Main Gate');
+  const [trackingId, setTrackingId] = useState('');
+  const [needsOtp, setNeedsOtp] = useState(false);
+  const [pickupOtp, setPickupOtp] = useState('');
 
-  const km = useMemo(() => estimateKm(pickup, dropoff), [pickup, dropoff]);
+  const dropoff = user.block ? `${user.block} block` : 'Your block';
+  const km = estimateKm(pickup, user.block ?? '');
   const fare = quoteFare(size, km);
+  const tid = trackingId.trim().toUpperCase();
+  const ready = tid.length >= 6 && (!needsOtp || pickupOtp.length >= 4);
 
   const submit = () => {
-    const order = place({ customerRegNo: user.regNo, size, pickup, dropoff, distanceKm: km, note: note || undefined });
+    const order = place({
+      customerRegNo: user.regNo,
+      customerName: user.name,
+      size,
+      pickup,
+      dropoff,
+      distanceKm: km,
+      trackingId: tid,
+      platform: tid.startsWith('TBA') ? 'Amazon' : tid.startsWith('FLP') ? 'Flipkart' : tid.startsWith('MYN') ? 'Myntra' : 'Courier',
+      pickupOtp: needsOtp ? pickupOtp : undefined,
+    });
     navigation.replace('Searching', { orderId: order.id });
   };
 
   return (
     <Screen scroll>
-      <T kind="eyebrow">New order</T>
-      <T kind="h1">Describe the drop</T>
-
-      <View style={s.section}>
-        <T kind="eyebrow">Package size</T>
-        <View style={s.sizes}>
-          {SIZES.map((o) => {
-            const on = o.id === size;
-            return (
-              <Pressable key={o.id} onPress={() => setSize(o.id)} style={[s.size, on && s.sizeOn]}>
-                <T kind="title" style={on && { color: colors.onBrand }}>
-                  {o.label}
-                </T>
-                <T kind="caption" style={on && { color: colors.onBrand }}>
-                  {o.hint}
-                </T>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
-      <View style={s.section}>
-        <T kind="eyebrow">Pickup</T>
-        <PlacePicker value={pickup} onChange={setPickup} />
-        <T kind="eyebrow">Drop-off</T>
-        <PlacePicker value={dropoff} onChange={setDropoff} />
-      </View>
-
-      <Field label="Note for the courier (optional)" placeholder="Parcel is under the name Meera" value={note} onChangeText={setNote} />
-
-      <Card>
-        <Route pickup={pickup} dropoff={dropoff} />
-        <View style={s.fareRow}>
-          <View>
-            <T kind="eyebrow">Estimated fare</T>
-            <T kind="caption">{km} km · goes to the courier</T>
-          </View>
-          <T kind="h1" style={{ color: colors.brandDark }}>
-            ₹{fare}
+      <View style={s.topbar}>
+        <Pressable onPress={() => navigation.goBack()} style={s.back}>
+          <T style={{ fontSize: 18, lineHeight: 20 }}>‹</T>
+        </Pressable>
+        <View style={s.chip}>
+          <T kind="mono" style={{ fontSize: 10.5, color: colors.brandDark }}>
+            New order
           </T>
         </View>
-      </Card>
+      </View>
+      <T kind="h1" style={s.h1}>
+        Place your order
+      </T>
+      <T kind="caption" style={s.sub}>
+        Tell us about the parcel so a courier can find and carry it.
+      </T>
 
-      <Button title="Place order" onPress={submit} disabled={pickup === dropoff} />
+      <T kind="eyebrow">Parcel size</T>
+      <Seg options={SIZES.map((x) => x.label)} value={SIZES.find((x) => x.id === size)!.label} onChange={(l) => setSize(SIZES.find((x) => x.label === l)!.id)} />
+
+      <T kind="eyebrow" style={{ marginTop: space.xs }}>
+        Pickup point
+      </T>
+      <Seg options={[...PICKUP_POINTS]} value={pickup} onChange={(v) => setPickup(v as PickupPoint)} />
+      <T kind="caption" style={{ fontSize: 11, marginTop: -space.xs }}>
+        Where the parcel will be waiting for a courier · drop-off at {dropoff}
+      </T>
+
+      <View>
+        <Field label="Tracking ID" placeholder="e.g. TBA3049182765" autoCapitalize="characters" autoCorrect={false} value={trackingId} onChangeText={setTrackingId} />
+        <T kind="caption" style={{ fontSize: 11, marginTop: 6 }}>
+          From the courier app or order confirmation SMS
+        </T>
+      </View>
+
+      <Card style={s.toggleRow}>
+        <View style={{ flex: 1, gap: 3 }}>
+          <T style={{ fontSize: 13.5, fontFamily: fonts.bodyMedium }}>Needs an OTP to collect?</T>
+          <T kind="caption" style={{ fontSize: 11.5, lineHeight: 16 }}>
+            Turn this on if the platform gives a pickup code
+          </T>
+        </View>
+        <Switch value={needsOtp} onValueChange={setNeedsOtp} trackColor={{ false: colors.line, true: colors.brandB }} thumbColor="#FFFFFF" />
+      </Card>
+      {needsOtp && (
+        <View>
+          <Field
+            label="Enter OTP"
+            placeholder="· · · · · ·"
+            keyboardType="number-pad"
+            maxLength={6}
+            value={pickupOtp}
+            onChangeText={(t) => setPickupOtp(t.replace(/\D/g, ''))}
+            style={{ textAlign: 'center', fontFamily: fonts.mono, letterSpacing: 6, fontSize: 17 }}
+          />
+          <T kind="caption" style={{ fontSize: 11, marginTop: 6 }}>
+            You'll get this from the delivery platform — pass it on to your courier
+          </T>
+        </View>
+      )}
+
+      <View style={s.bottom}>
+        <Button title={`Confirm order · ₹${fare}`} onPress={submit} disabled={!ready} />
+        <T kind="caption" style={{ textAlign: 'center' }}>
+          A courier heading your way will pick this up
+        </T>
+      </View>
     </Screen>
   );
 }
 
-function PlacePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function Seg({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>
-      {CAMPUS_PLACES.map((p) => {
-        const on = p === value;
+    <View style={s.seg}>
+      {options.map((o) => {
+        const on = o === value;
         return (
-          <Pressable key={p} onPress={() => onChange(p)} style={[s.chip, on && s.chipOn]}>
-            <T style={[{ fontSize: 14 }, on && { color: colors.onBrand }]}>{p}</T>
+          <Pressable key={o} onPress={() => onChange(o)} style={[s.segBtn, on && s.segOn]}>
+            <T style={[s.segText, on && { color: colors.onBrand, fontFamily: fonts.bodySemi }]}>{o}</T>
           </Pressable>
         );
       })}
-    </ScrollView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
-  section: { gap: space.sm },
-  sizes: { flexDirection: 'row', gap: space.sm },
-  size: {
-    flex: 1,
-    height: 72,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sizeOn: { backgroundColor: colors.brandB, borderColor: colors.brandB },
-  chips: { gap: space.sm, paddingVertical: 2 },
-  chip: {
-    height: 38,
-    paddingHorizontal: 14,
-    borderRadius: 19,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
-    justifyContent: 'center',
-  },
-  chipOn: { backgroundColor: colors.brandB, borderColor: colors.brandB },
-  fareRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: space.xs },
+  topbar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: space.sm },
+  back: { width: 32, height: 32, borderRadius: 9, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
+  chip: { backgroundColor: 'rgba(252,211,77,0.09)', borderWidth: 1, borderColor: 'rgba(252,211,77,0.22)', borderRadius: 6, paddingVertical: 4, paddingHorizontal: 9 },
+  h1: { fontSize: 26, lineHeight: 29, textTransform: 'none', letterSpacing: -0.5 },
+  sub: { fontSize: 13.5, lineHeight: 20, marginTop: -space.sm },
+  seg: { flexDirection: 'row', gap: 4, backgroundColor: colors.ground, borderWidth: 1, borderColor: colors.line, borderRadius: 11, padding: 4 },
+  segBtn: { flex: 1, paddingVertical: 9, borderRadius: 8, alignItems: 'center' },
+  segOn: { backgroundColor: colors.brandB },
+  segText: { fontSize: 12.5, fontFamily: fonts.bodyMedium, color: colors.muted },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, paddingHorizontal: 16 },
+  bottom: { gap: space.sm, marginTop: space.md },
 });

@@ -40,6 +40,10 @@ export interface Order {
   distanceKm: number;
   fare: number;
   note?: string;
+  customerName?: string;
+  trackingId?: string;
+  platform?: string; // e.g. Amazon, Flipkart
+  pickupOtp?: string; // platform's collection code, shared with the courier on request
   state: OrderState;
   createdAt: number;
   updatedAt: number;

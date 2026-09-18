@@ -7,6 +7,7 @@ export const CAMPUS = { latitude: 12.9692, longitude: 79.1559 };
 
 const COORDS: Record<string, { latitude: number; longitude: number }> = {
   'Main Gate': { latitude: 12.9716, longitude: 79.1594 },
+  'Amazon Pick Up Point': { latitude: 12.9708, longitude: 79.1602 },
   'Block A': { latitude: 12.9702, longitude: 79.1571 },
   'Block B': { latitude: 12.9695, longitude: 79.1562 },
   'Block C': { latitude: 12.9688, longitude: 79.1553 },
@@ -27,7 +28,7 @@ interface Props {
 /** Live map. On web (no react-native-maps) it degrades to a schematic. */
 export function LiveMap({ pickup, dropoff, progress }: Props) {
   const a = COORDS[pickup] ?? CAMPUS;
-  const b = COORDS[dropoff] ?? CAMPUS;
+  const b = COORDS[dropoff] ?? (dropoff.startsWith('LH') ? COORDS['Ladies Hostel'] : dropoff.startsWith('MH') ? COORDS['Mens Hostel'] : CAMPUS);
   const courier = {
     latitude: a.latitude + (b.latitude - a.latitude) * progress,
     longitude: a.longitude + (b.longitude - a.longitude) * progress,

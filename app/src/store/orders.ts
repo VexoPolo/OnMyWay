@@ -3,8 +3,9 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Order, OrderState, PackageSize } from './types';
 
-const SIZE_BASE: Record<PackageSize, number> = { S: 25, M: 30, L: 40, XL: 55 };
-const PER_KM = 12;
+// Frames price by parcel class only: Regular (S/M) ₹40, Large (L/XL) ₹55.
+const SIZE_BASE: Record<PackageSize, number> = { S: 40, M: 40, L: 55, XL: 55 };
+const PER_KM = 0;
 
 /** Fare is quoted before the order is placed and goes to the courier. */
 export function quoteFare(size: PackageSize, distanceKm: number): number {

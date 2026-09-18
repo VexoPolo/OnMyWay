@@ -33,22 +33,12 @@ export const api = {
   },
 };
 
-export const CAMPUS_PLACES = [
-  'Main Gate',
-  'Block A',
-  'Block B',
-  'Block C',
-  'Library',
-  'Mens Hostel',
-  'Ladies Hostel',
-  'Food Court',
-  'Sports Complex',
-] as const;
+export const PICKUP_POINTS = ['Main Gate', 'Amazon Pick Up Point'] as const;
+export type PickupPoint = (typeof PICKUP_POINTS)[number];
 
-/** Crude distance table in km — keyed by index difference. Good enough for a fare quote. */
+/** Rough walk from a pickup point to a hostel block, in km. Good enough for the demo. */
 export function estimateKm(from: string, to: string): number {
-  const a = CAMPUS_PLACES.indexOf(from as any);
-  const b = CAMPUS_PLACES.indexOf(to as any);
-  if (a < 0 || b < 0 || a === b) return 0.4;
-  return Math.round((0.5 + Math.abs(a - b) * 0.35) * 10) / 10;
+  const base = from === 'Amazon Pick Up Point' ? 0.8 : 1.4;
+  const ladies = to.startsWith('LH');
+  return Math.round((base + (ladies ? 0.4 : 0)) * 10) / 10;
 }

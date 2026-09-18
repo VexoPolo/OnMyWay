@@ -2,17 +2,18 @@ import { useNavigation } from '@react-navigation/native';
 import { useState } from 'react';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, StyleSheet, Switch, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '../components/Button';
-import { Card } from '../components/Card';
 import { Logo } from '../components/Logo';
 import { OrderCard } from '../components/OrderCard';
+import { PICKUP_POINTS, type PickupPoint } from '../services/mock';
+import type { Order } from '../store/types';
 import { Screen } from '../components/Screen';
 import { T } from '../components/Text';
 import type { AppStackParams } from '../navigation/types';
 import { useAuth } from '../store/auth';
 import { useOrders } from '../store/orders';
-import { brandGradient, colors, space } from '../theme';
+import { brandGradient, colors, fonts, space } from '../theme';
 
 const ACTIVE = new Set(['ORDER_PLACED', 'AGENT_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'ARRIVED']);
 
@@ -56,21 +57,39 @@ function CustomerHome() {
   );
 }
 
+const SIZE_LABEL = { S: 'Regular', M: 'Regular', L: 'Large', XL: 'Large' } as const;
+const DRIVER = { name: 'Ramesh K.', phone: '+91 9XXXX 21847' }; // ponytail: platform integration later
+
+/** Frame 3 — Delivery Agent · Assigned Orders. Pick where you are, see what's waiting there. */
 function CourierHome() {
   const nav = useNavigation<NativeStackNavigationProp<AppStackParams>>();
   const user = useAuth((s) => s.user)!;
   const setOnline = useAuth((s) => s.setOnline);
   const orders = useOrders((s) => s.orders);
+  const accept = useOrders((s) => s.accept);
+  const [loc, setLoc] = useState<PickupPoint | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [nudge, setNudge] = useState<string>();
+
   const all = Object.values(orders).sort((a, b) => b.createdAt - a.createdAt);
-  const mine = all.filter((o) => o.courierRegNo === user.regNo && ACTIVE.has(o.state));
   // ponytail: own orders are listed too so one phone can play both roles; the backend will exclude them
   const open = all.filter((o) => o.state === 'ORDER_PLACED');
-  const taken = all.filter((o) => o.state !== 'ORDER_PLACED' && o.courierRegNo && o.courierRegNo !== user.regNo).slice(0, 2);
+  const here = loc ? all.filter((o) => o.pickup === loc && (o.state === 'ORDER_PLACED' || (o.courierRegNo === user.regNo && ACTIVE.has(o.state)))) : [];
 
-  const [nudge, setNudge] = useState<string>();
-  const grab = () => {
+  const pick = (p: PickupPoint) => {
+    setLoc(p);
+    setOpenId(null);
     if (!user.online) setOnline(true);
-    if (open[0]) return nav.navigate('CourierJob', { orderId: open[0].id });
+  };
+  const start = (o: Order) => {
+    if (o.state === 'ORDER_PLACED') {
+      const r = accept(o.id, user.regNo);
+      if (r === 'taken') return setNudge('Someone else got there first.');
+    }
+    nav.navigate('CourierJob', { orderId: o.id, point: loc ?? undefined });
+  };
+  const grab = () => {
+    if (open[0]) return nav.navigate('CourierJob', { orderId: open[0].id, point: loc ?? undefined });
     setNudge("No open orders right now — you'll be first when one comes in.");
     setTimeout(() => setNudge(undefined), 2500);
   };
@@ -78,47 +97,66 @@ function CourierHome() {
   return (
     <View style={{ flex: 1 }}>
     <Screen scroll>
-      <Header name={user.name} />
-      <Pressable onPress={() => setOnline(!user.online)}>
-        <Card style={[s.online, user.online && s.onlineOn]}>
-          <View style={s.row}>
-            <View>
-              <T kind="subtitle" style={user.online && { color: colors.onBrand }}>
-                {user.online ? "You're online" : "You're offline"}
-              </T>
-              <T kind="caption" style={user.online && { color: colors.onBrand }}>
-                {user.online ? 'Open orders near you show below' : 'Go online to see open orders'}
-              </T>
-            </View>
-            <Switch
-              value={user.online}
-              onValueChange={setOnline}
-              trackColor={{ false: colors.line, true: colors.onBrand }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-        </Card>
-      </Pressable>
+      <View style={s.topbar}>
+        <Logo variant="mark" height={22} />
+        <View style={s.chip}>
+          <T kind="mono" style={{ fontSize: 10.5, color: colors.brandDark }}>Delivery agent</T>
+        </View>
+      </View>
+      <T kind="h1" style={s.h1}>Where are you?</T>
+      <T kind="caption" style={s.sub}>Pick your location to see the orders assigned to you there.</T>
 
-      {mine.length > 0 && (
-        <View style={s.section}>
-          <T kind="eyebrow">Your job</T>
-          {mine.map((o) => (
-            <OrderCard key={o.id} order={o} onPress={() => nav.navigate('CourierJob', { orderId: o.id })} />
-          ))}
+      <View style={s.seg}>
+        {PICKUP_POINTS.map((p) => {
+          const on = p === loc;
+          return (
+            <Pressable key={p} onPress={() => pick(p)} style={[s.segBtn, on && s.segOn]}>
+              <T style={[s.segText, on && { color: colors.onBrand, fontFamily: fonts.bodySemi }]}>{p}</T>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {!loc && (
+        <View style={s.empty}>
+          <Logo variant="mark" height={44} />
+          <T kind="caption" style={{ textAlign: 'center', maxWidth: 240 }}>Choose a pickup point above to see your assigned orders</T>
         </View>
       )}
 
-      {user.online && (
+      {loc && (
         <View style={s.section}>
-          <T kind="eyebrow">Open orders</T>
-          {open.length === 0 && <T kind="caption">Nothing right now. Keep walking.</T>}
-          {open.map((o) => (
-            <OrderCard key={o.id} order={o} onPress={() => nav.navigate('CourierJob', { orderId: o.id })} />
-          ))}
-          {taken.map((o) => (
-            <OrderCard key={o.id} order={o} taken />
-          ))}
+          <T kind="eyebrow">Assigned to you here</T>
+          {here.length === 0 && <T kind="caption">Nothing waiting at {loc} right now.</T>}
+          {here.map((o) => {
+            const isOpen = openId === o.id;
+            const large = o.size === 'L' || o.size === 'XL';
+            return (
+              <View key={o.id} style={[s.item, isOpen && s.itemOpen]}>
+                <Pressable onPress={() => setOpenId(isOpen ? null : o.id)} style={s.itemHead}>
+                  <View style={{ gap: 3, flex: 1 }}>
+                    <T kind="mono" style={{ fontSize: 12.5, fontFamily: fonts.monoMedium }}>{o.trackingId ?? o.id}</T>
+                    <T kind="caption" style={{ fontSize: 11.5 }}>→ {o.dropoff}</T>
+                  </View>
+                  <View style={[s.tag, large && s.tagLarge]}>
+                    <T kind="mono" style={[{ fontSize: 10.5 }, large && { color: colors.brandDark }]}>{SIZE_LABEL[o.size]}</T>
+                  </View>
+                  <T style={{ fontSize: 11, color: isOpen ? colors.brandDark : colors.muted, transform: [{ rotate: isOpen ? '180deg' : '0deg' }] }}>▾</T>
+                </Pressable>
+                {isOpen && (
+                  <View style={s.itemBody}>
+                    <Row k="Platform" v={o.platform ?? '—'} />
+                    <Row k="Ordered by" v={o.customerName ?? o.customerRegNo} />
+                    <Row k="Drop-off" v={o.dropoff} />
+                    <Row k="Delivery driver" v={o.pickup === 'Amazon Pick Up Point' ? 'Amazon Logistics' : DRIVER.name} />
+                    <Row k="Driver phone" v={o.pickup === 'Amazon Pick Up Point' ? '—' : DRIVER.phone} mono />
+                    <Row k="You earn" v={`₹${o.fare}`} />
+                    <Button title={o.state === 'ORDER_PLACED' ? 'Accept & start pickup →' : 'Continue pickup →'} onPress={() => start(o)} style={{ marginTop: 8 }} />
+                  </View>
+                )}
+              </View>
+            );
+          })}
         </View>
       )}
     </Screen>
@@ -144,6 +182,15 @@ function CourierHome() {
   );
 }
 
+function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
+  return (
+    <View style={s.row}>
+      <T kind="caption" style={{ fontSize: 13 }}>{k}</T>
+      <T style={mono ? { fontSize: 12.5, fontFamily: fonts.mono } : { fontSize: 13, fontFamily: fonts.bodyMedium }}>{v}</T>
+    </View>
+  );
+}
+
 export function routeFor(state: string): 'Searching' | 'Track' | 'Handover' | 'Delivered' {
   switch (state) {
     case 'ORDER_PLACED':
@@ -160,9 +207,22 @@ export function routeFor(state: string): 'Searching' | 'Track' | 'Handover' | 'D
 const s = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: space.sm },
   section: { gap: space.sm, marginTop: space.sm },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  online: {},
-  onlineOn: { backgroundColor: colors.brandB, borderColor: colors.brandB },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 9 },
+  topbar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: space.sm },
+  chip: { backgroundColor: 'rgba(252,211,77,0.09)', borderWidth: 1, borderColor: 'rgba(252,211,77,0.22)', borderRadius: 6, paddingVertical: 4, paddingHorizontal: 9 },
+  h1: { fontSize: 26, lineHeight: 29, textTransform: 'none', letterSpacing: -0.5 },
+  sub: { fontSize: 13.5, lineHeight: 20, marginTop: -space.sm },
+  seg: { flexDirection: 'row', gap: 4, backgroundColor: colors.ground, borderWidth: 1, borderColor: colors.line, borderRadius: 11, padding: 4 },
+  segBtn: { flex: 1, paddingVertical: 9, borderRadius: 8, alignItems: 'center' },
+  segOn: { backgroundColor: colors.brandB },
+  segText: { fontSize: 12.5, fontFamily: fonts.bodyMedium, color: colors.muted },
+  empty: { alignItems: 'center', gap: 14, paddingVertical: 48, opacity: 0.8 },
+  item: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 14, overflow: 'hidden' },
+  itemOpen: { borderColor: 'rgba(252,211,77,0.3)' },
+  itemHead: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
+  itemBody: { paddingHorizontal: 14, paddingBottom: 14, borderTopWidth: 1, borderColor: colors.line },
+  tag: { paddingVertical: 3, paddingHorizontal: 8, borderRadius: 6, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.ground },
+  tagLarge: { borderColor: 'rgba(252,211,77,0.3)' },
   fab: {
     position: 'absolute',
     right: 16,
