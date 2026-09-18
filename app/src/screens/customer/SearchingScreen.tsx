@@ -23,14 +23,9 @@ export function SearchingScreen({ navigation, route }: Props) {
   const cancel = useOrders((s) => s.cancel);
 
   useEffect(() => {
-    let alive = true;
-    api.findCourier().then((c) => {
-      if (!alive) return;
-      accept(orderId, MOCK_COURIER); // no-op if a real courier on this device already took it
-    });
-    return () => {
-      alive = false;
-    };
+    // Deliberately not cancelled on unmount: the customer may leave this screen
+    // while the broadcast is still out. accept() is a no-op if someone real took it.
+    api.findCourier().then(() => accept(orderId, MOCK_COURIER));
   }, [orderId, accept]);
 
   useEffect(() => {
@@ -52,7 +47,8 @@ export function SearchingScreen({ navigation, route }: Props) {
         </T>
         <T kind="state">ORDER_PLACED</T>
       </View>
-      <Button title="Cancel" variant="ghost" onPress={() => cancel(orderId)} />
+      <Button title="Keep searching in the background" variant="ghost" onPress={() => navigation.popToTop()} />
+      <Button title="Cancel order" variant="ghost" onPress={() => cancel(orderId)} />
     </Screen>
   );
 }

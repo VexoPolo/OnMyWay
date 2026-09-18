@@ -1,5 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
+import { useState } from 'react';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Switch, View } from 'react-native';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
@@ -10,7 +12,7 @@ import { T } from '../components/Text';
 import type { AppStackParams } from '../navigation/types';
 import { useAuth } from '../store/auth';
 import { useOrders } from '../store/orders';
-import { colors, space } from '../theme';
+import { brandGradient, colors, space } from '../theme';
 
 const ACTIVE = new Set(['ORDER_PLACED', 'AGENT_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'ARRIVED']);
 
@@ -61,10 +63,20 @@ function CourierHome() {
   const orders = useOrders((s) => s.orders);
   const all = Object.values(orders).sort((a, b) => b.createdAt - a.createdAt);
   const mine = all.filter((o) => o.courierRegNo === user.regNo && ACTIVE.has(o.state));
-  const open = all.filter((o) => o.state === 'ORDER_PLACED' && o.customerRegNo !== user.regNo);
+  // ponytail: own orders are listed too so one phone can play both roles; the backend will exclude them
+  const open = all.filter((o) => o.state === 'ORDER_PLACED');
   const taken = all.filter((o) => o.state !== 'ORDER_PLACED' && o.courierRegNo && o.courierRegNo !== user.regNo).slice(0, 2);
 
+  const [nudge, setNudge] = useState<string>();
+  const grab = () => {
+    if (!user.online) setOnline(true);
+    if (open[0]) return nav.navigate('CourierJob', { orderId: open[0].id });
+    setNudge("No open orders right now — you'll be first when one comes in.");
+    setTimeout(() => setNudge(undefined), 2500);
+  };
+
   return (
+    <View style={{ flex: 1 }}>
     <Screen scroll>
       <Header name={user.name} />
       <Pressable onPress={() => setOnline(!user.online)}>
@@ -110,6 +122,25 @@ function CourierHome() {
         </View>
       )}
     </Screen>
+
+    {/* floating accept: jumps to the newest open order */}
+    {!!nudge && (
+      <View style={s.nudge}>
+        <T kind="caption" style={{ color: colors.ink }}>{nudge}</T>
+      </View>
+    )}
+    <Pressable onPress={grab} style={({ pressed }) => [s.fab, pressed && { transform: [{ scale: 0.94 }] }]} accessibilityLabel="Accept an order">
+      <LinearGradient colors={[...brandGradient]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.fabFill}>
+        <View style={s.plusH} />
+        <View style={s.plusV} />
+      </LinearGradient>
+      {open.length > 0 && (
+        <View style={s.badge}>
+          <T kind="mono" style={{ fontSize: 10, color: colors.ink }}>{open.length}</T>
+        </View>
+      )}
+    </Pressable>
+    </View>
   );
 }
 
@@ -132,4 +163,46 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   online: {},
   onlineOn: { backgroundColor: colors.brandB, borderColor: colors.brandB },
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 20,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    shadowColor: colors.brandB,
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+  fabFill: { flex: 1, borderRadius: 29, alignItems: 'center', justifyContent: 'center' },
+  plusH: { position: 'absolute', width: 22, height: 3.5, borderRadius: 2, backgroundColor: colors.onBrand },
+  plusV: { position: 'absolute', width: 3.5, height: 22, borderRadius: 2, backgroundColor: colors.onBrand },
+  badge: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 5,
+    borderRadius: 10,
+    backgroundColor: colors.ground,
+    borderWidth: 1.5,
+    borderColor: colors.brandB,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nudge: {
+    position: 'absolute',
+    left: 16,
+    right: 90,
+    bottom: 30,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
 });
