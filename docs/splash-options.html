@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OnMyWay — splash options</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--ground:#0A0A0A;--surface:#171717;--line:#232326;--a:#FCD34D;--b:#F59E0B;--bd:#FBBF24;--muted:#8a8a90;--ink:#F4F4F5}
+*{box-sizing:border-box;margin:0}
+body{background:var(--ground);color:var(--ink);font-family:'IBM Plex Mono',monospace;padding:40px 20px;display:flex;flex-direction:column;align-items:center;gap:28px}
+h1{font-family:Archivo,sans-serif;font-weight:900;font-size:22px;letter-spacing:-.02em}
+.row{display:flex;gap:36px;flex-wrap:wrap;justify-content:center}
+.col{display:flex;flex-direction:column;align-items:center;gap:12px}
+.title{font-size:12px;color:var(--muted)}.title b{color:var(--ink);font-weight:500}
+.desc{font-size:11px;color:var(--muted);max-width:300px;text-align:center;line-height:1.5}
+.device{width:390px;height:844px;padding:11px;border-radius:58px;background:linear-gradient(150deg,#2c2c31,#131316 45%,#2a2a2f);box-shadow:0 44px 90px -30px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.05)}
+.vp{position:relative;width:100%;height:100%;border-radius:48px;overflow:hidden;background:var(--ground);cursor:pointer}
+.stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+.mark{width:220px;height:calc(220px * 221 / 532);background:url(../assets/logo/onmyway-mark.png) center/contain no-repeat}
+.word{width:170px;height:calc(170px * 127 / 502);background:url(../assets/logo/onmyway-wordmark.png) center/contain no-repeat}
+.tag{position:absolute;bottom:56px;font-size:10px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+.replay{font:inherit;font-size:11px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+
+/* A — pin drop: pin falls in, MW slides out from behind it, wordmark rises */
+.A .pin,.A .mw{position:absolute;inset:0;background:inherit}
+.A .mark{position:relative;background:none}
+.A .pin{background:url(../assets/logo/onmyway-mark.png) center/contain no-repeat;clip-path:inset(0 79% 0 0);animation:drop .9s cubic-bezier(.22,1.2,.36,1) both}
+.A .mw{background:url(../assets/logo/onmyway-mark.png) center/contain no-repeat;clip-path:inset(0 0 0 21%);animation:slide .6s .7s cubic-bezier(.22,.8,.25,1) both}
+.A .word{animation:rise .5s 1.2s ease both}
+@keyframes drop{from{transform:translateY(-320px);opacity:0}60%{opacity:1}to{transform:none;opacity:1}}
+@keyframes slide{from{transform:translateX(-40px);opacity:0}to{transform:none;opacity:1}}
+@keyframes rise{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+
+/* B — route trace: a little walker traces the mark left→right, then turns and walks back along the word line, OnMyWay trailing behind */
+.B .mark{-webkit-mask:linear-gradient(90deg,#000 0 50%,transparent 50%) right/200% 100% no-repeat;mask:linear-gradient(90deg,#000 0 50%,transparent 50%) right/200% 100% no-repeat;animation:wipe 1.8s .2s cubic-bezier(.4,0,.2,1) both}
+.B .word{-webkit-mask:linear-gradient(90deg,transparent 0 50%,#000 50%) left/200% 100% no-repeat;mask:linear-gradient(90deg,transparent 0 50%,#000 50%) left/200% 100% no-repeat;animation:wipeBack 1.4s 2.15s cubic-bezier(.4,0,.2,1) both}
+.B .walker{position:absolute;width:22px;height:28px;top:calc(50% - 30px - 14px - 4px);left:calc(50% - 118px);animation:walk 3.35s .2s cubic-bezier(.4,0,.2,1) both,vanish .3s 3.55s ease both;filter:drop-shadow(0 0 8px rgba(252,211,77,.55))}
+.B .walker svg{width:100%;height:100%;overflow:visible}
+.B .walker .leg{transform-origin:11px 17px;animation:step .3s ease-in-out infinite alternate}
+.B .walker .leg.r{animation-delay:-.3s}
+.B .walker .arm{transform-origin:11px 10px;animation:swing .3s ease-in-out infinite alternate}
+@keyframes wipe{from{-webkit-mask-position:right;mask-position:right}to{-webkit-mask-position:left;mask-position:left}}
+@keyframes wipeBack{from{-webkit-mask-position:left;mask-position:left}to{-webkit-mask-position:right;mask-position:right}}
+@keyframes walk{0%{transform:translate(0,0) scaleX(1)}54%{transform:translate(236px,0) scaleX(1)}58%{transform:translate(236px,85px) scaleX(-1)}100%{transform:translate(36px,85px) scaleX(-1)}}
+@keyframes step{from{transform:rotate(-28deg)}to{transform:rotate(28deg)}}
+@keyframes swing{from{transform:rotate(22deg)}to{transform:rotate(-22deg)}}
+@keyframes vanish{to{opacity:0}}
+
+/* C — radar: rings pulse from the pin (ties to the "finding a courier" screen), mark fades in over them */
+.C .ring{position:absolute;width:140px;height:140px;border-radius:50%;border:2px solid var(--b);top:calc(50% - 70px - 30px);left:calc(50% - 70px - 88px);animation:pulse 1.8s ease-out infinite}
+.C .ring:nth-child(2){animation-delay:.6s}.C .ring:nth-child(3){animation-delay:1.2s}
+.C .mark{animation:fade .8s .4s ease both}.C .word{animation:rise .5s 1s ease both}
+@keyframes pulse{from{transform:scale(.25);opacity:.7}to{transform:scale(1.8);opacity:0}}
+@keyframes fade{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+
+/* D — light sweep: the mark sits dark, a band of amber light passes over it once and leaves it lit */
+.D .mark{-webkit-mask:url(../assets/logo/onmyway-mark.png) center/contain no-repeat;mask:url(../assets/logo/onmyway-mark.png) center/contain no-repeat;background:linear-gradient(110deg,#2a2a2e 0 30%,var(--a) 45%,var(--b) 55%,#2a2a2e 70% 100%) -260px 0/520px 100% no-repeat;animation:sweep 1.4s .3s cubic-bezier(.65,0,.35,1) both,lit .01s 1.7s both}
+.D .word{animation:rise .5s 1.6s ease both}
+@keyframes sweep{from{background-position:-260px 0}to{background-position:0 0}}
+@keyframes lit{to{background:linear-gradient(135deg,var(--a),var(--b))}}
+</style>
+<body>
+<h1>Splash options — before the first landing page</h1>
+<p class="desc">Tap a phone to replay. Each is 1.6–3.5 s then hands off to Registration.</p>
+<div class="row">
+
+<div class="col"><div class="title">A · <b>Pin drop</b></div>
+<div class="device"><div class="vp A"><div class="stage"><div class="mark"><div class="pin"></div><div class="mw"></div></div><div class="word"></div><div class="tag">pin lands · MW follows</div></div></div></div>
+<p class="desc">The location pin drops in and lands with a soft bounce; the M–W slides out from behind it. Says "we mark the spot" — the most literal read of the logo.</p></div>
+
+<div class="col"><div class="title">B · <b>Route trace</b></div>
+<div class="device"><div class="vp B"><div class="stage"><div class="walker"><svg viewBox="0 0 22 28" fill="none" stroke="#FCD34D" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="4" r="3" fill="#FCD34D" stroke="none"/><path d="M11 8v9"/><path class="arm" d="M11 10l6 4"/><path class="arm" d="M11 10l-5 5"/><rect x="14.5" y="12" width="6" height="5" rx="1" fill="#F59E0B" stroke="none"/><path class="leg" d="M11 17l-5 9"/><path class="leg r" d="M11 17l5 9"/></svg></div><div class="mark"></div><div class="word"></div><div class="tag">to the gate and back</div></div></div></div>
+<p class="desc">A little courier walks the mark left to right, then turns and walks back along the bottom line with "OnMyWay" trailing behind — the whole product in one loop: to the gate and back.</p></div>
+
+<div class="col"><div class="title">C · <b>Radar</b></div>
+<div class="device"><div class="vp C"><div class="stage"><div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="mark"></div><div class="word"></div><div class="tag">looking for someone nearby</div></div></div></div>
+<p class="desc">Rings pulse out from the pin while the mark fades in. Reuses the exact motion from the "Finding a courier" screen, so the app has one signature animation.</p></div>
+
+<div class="col"><div class="title">D · <b>Light sweep</b></div>
+<div class="device"><div class="vp D"><div class="stage"><div class="mark"></div><div class="word"></div><div class="tag">one pass of light</div></div></div></div>
+<p class="desc">The mark sits dark; one band of amber light sweeps across and leaves it lit. Quietest of the four, closest to a "premium" feel.</p></div>
+
+</div>
+<script>
+document.querySelectorAll('.vp').forEach(v=>v.addEventListener('click',()=>{const c=v.className;v.className='vp';void v.offsetWidth;v.className=c;}));
+</script>
+</body>
+</html>
