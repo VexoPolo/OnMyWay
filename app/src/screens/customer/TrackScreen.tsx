@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -22,6 +22,8 @@ export function TrackScreen({ navigation, route }: Props) {
   const { orderId } = route.params;
   const order = useOrders((s) => s.orders[orderId]);
   const report = useOrders((s) => s.report);
+  const setDriverPhone = useOrders((s) => s.setDriverPhone);
+  const [driverPhone, setDriver] = useState<string | null>(null); // null = not editing, show stored value
   const [reporting, setReporting] = useState(false);
 
   useEffect(() => {
@@ -69,7 +71,34 @@ export function TrackScreen({ navigation, route }: Props) {
               {order.pickup} → {order.dropoff} · ₹{order.fare}
             </T>
           </View>
-          <T kind="state">{order.state}</T>
+          {order.courierPhone ? (
+            <Pressable onPress={() => Linking.openURL(`tel:${order.courierPhone}`)} style={s.call}>
+              <T kind="mono" style={{ fontSize: 11, color: colors.onBrand }}>CALL</T>
+            </Pressable>
+          ) : (
+            <T kind="state">{order.state}</T>
+          )}
+        </View>
+        {!!order.courierPhone && (
+          <T kind="mono" style={{ fontSize: 12, color: colors.muted, marginTop: -6 }}>
+            {order.courierRegNo} · {order.courierPhone}
+          </T>
+        )}
+        <View style={s.driverRow}>
+          <T kind="caption" style={{ fontSize: 12.5 }}>Driver's phone</T>
+          <TextInput
+            value={driverPhone ?? order.driverPhone ?? ''}
+            onChangeText={(t) => setDriver(t.replace(/[^\d+ ]/g, ''))}
+            onBlur={() => {
+              if (driverPhone !== null) setDriverPhone(orderId, driverPhone);
+              setDriver(null);
+            }}
+            placeholder="Add from the Amazon app"
+            placeholderTextColor={colors.muted}
+            keyboardType="phone-pad"
+            maxLength={15}
+            style={s.driverInput}
+          />
         </View>
         <Card style={s.card}>
           <Timeline state={order.state} />
@@ -119,4 +148,7 @@ const s = StyleSheet.create({
   banner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(245,158,11,0.10)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.35)', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 },
   bannerDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.brandB },
   link: { fontSize: 11, color: colors.muted, textAlign: 'center', textDecorationLine: 'underline' },
+  call: { backgroundColor: colors.brandB, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 },
+  driverRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: colors.line, borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 4 },
+  driverInput: { minWidth: 170, textAlign: 'right', color: colors.ink, fontFamily: fonts.mono, fontSize: 13.5, paddingVertical: 8 },
 });

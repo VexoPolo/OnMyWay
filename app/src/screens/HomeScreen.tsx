@@ -59,7 +59,6 @@ function CustomerHome() {
 }
 
 const SIZE_LABEL = { S: 'Regular', M: 'Regular', L: 'Large', XL: 'Large' } as const;
-const DRIVER = { name: 'Ramesh K.', phone: '+91 9XXXX 21847' }; // ponytail: platform integration later
 
 /** Frame 3 — Delivery Agent · Assigned Orders. Pick where you are, see what's waiting there. */
 function CourierHome() {
@@ -75,7 +74,7 @@ function CourierHome() {
   const all = Object.values(orders).sort((a, b) => b.createdAt - a.createdAt);
   // ponytail: own orders are listed too so one phone can play both roles; the backend will exclude them
   const open = all.filter((o) => o.state === 'ORDER_PLACED');
-  const delivered = all.filter((o) => o.courierRegNo === user.regNo && o.state === 'DELIVERED');
+  const delivered = all.filter((o) => o.courierRegNo === user.regNo && o.state === 'DELIVERED' && Date.now() - o.updatedAt < 7 * 86_400_000);
   const earned = delivered.reduce((sum, o) => sum + o.fare, 0);
   const doneToday = all.filter((o) => o.state === 'DELIVERED' && Date.now() - o.updatedAt < 86_400_000);
   const avgFare = doneToday.length ? Math.round(doneToday.reduce((sum, o) => sum + o.fare, 0) / doneToday.length) : 25;
@@ -172,8 +171,7 @@ function CourierHome() {
                     <Row k="Platform" v={o.platform ?? '—'} />
                     <Row k="Ordered by" v={o.customerName ?? o.customerRegNo} />
                     <Row k="Drop-off" v={o.dropoff} />
-                    <Row k="Delivery driver" v={o.pickup === 'Amazon Pick Up Point' ? 'Amazon Logistics' : DRIVER.name} />
-                    <Row k="Driver phone" v={o.pickup === 'Amazon Pick Up Point' ? '—' : DRIVER.phone} mono />
+                    <Row k="Driver phone" v={o.driverPhone ?? 'Not shared yet'} mono={!!o.driverPhone} />
                     <Row k="You earn" v={`₹${o.fare}`} />
                     <Button title={o.state === 'ORDER_PLACED' ? 'Accept & start pickup →' : 'Continue pickup →'} onPress={() => start(o)} style={{ marginTop: 8 }} />
                   </View>

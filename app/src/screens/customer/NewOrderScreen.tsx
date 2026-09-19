@@ -28,6 +28,7 @@ export function NewOrderScreen({ navigation }: Props) {
   const [pickup, setPickup] = useState<PickupPoint>('Main Gate');
   const [trackingId, setTrackingId] = useState('');
   const [pickupOtp, setPickupOtp] = useState('');
+  const [driverPhone, setDriverPhone] = useState('');
 
   const dropoff = user.block ? `${user.block} block` : 'Your block';
   const km = estimateKm(pickup, user.block ?? '');
@@ -47,6 +48,7 @@ export function NewOrderScreen({ navigation }: Props) {
       customerPhone: user.phone,
       platform: platformOf(tid),
       pickupOtp: pickupOtp || undefined,
+      driverPhone: driverPhone.trim() || undefined,
     });
     navigation.replace('Searching', { orderId: order.id });
   };
@@ -100,6 +102,20 @@ export function NewOrderScreen({ navigation }: Props) {
         />
         <T kind="caption" style={{ fontSize: 11, marginTop: 6 }}>
           Amazon / Flipkart text this to you — your courier shows it to the driver. Leave blank if there isn't one.
+        </T>
+      </View>
+
+      <View>
+        <Field
+          label="Delivery driver's phone (optional)"
+          placeholder="From the Amazon / Flipkart app"
+          keyboardType="phone-pad"
+          maxLength={15}
+          value={driverPhone}
+          onChangeText={(t) => setDriverPhone(t.replace(/[^\d+ ]/g, ''))}
+        />
+        <T kind="caption" style={{ fontSize: 11, marginTop: 6 }}>
+          So your courier can call the driver at the gate. You can add it later from the tracking screen.
         </T>
       </View>
 

@@ -37,6 +37,7 @@ export interface Order {
   customerRegNo: string;
   courierRegNo?: string;
   courierName?: string;
+  courierPhone?: string; // shown to the customer while the order is live
   size: PackageSize;
   pickup: string;
   dropoff: string;
@@ -48,6 +49,7 @@ export interface Order {
   trackingId?: string;
   platform?: string; // e.g. Amazon, Flipkart
   pickupOtp?: string; // platform's collection code, shared with the courier on request
+  driverPhone?: string; // the platform driver's number, from the customer's Amazon/Flipkart app
   state: OrderState;
   createdAt: number;
   updatedAt: number;

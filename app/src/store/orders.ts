@@ -83,8 +83,8 @@ const uuid = () =>
 
 function sidecarOf(o: Order): string {
   return JSON.stringify({
-    rr: o.customerRegNo, cr: o.courierRegNo, cn: o.courierName, cu: o.courierUpi, fee: o.fare,
-    po: o.pickupOtp, px: o.otp?.expiresAt, up: o.updatedAt, rt: o.rating, rp: o.report,
+    rr: o.customerRegNo, cr: o.courierRegNo, cn: o.courierName, cu: o.courierUpi, cp: o.courierPhone, fee: o.fare,
+    po: o.pickupOtp, dp: o.driverPhone, px: o.otp?.expiresAt, up: o.updatedAt, rt: o.rating, rp: o.report,
   });
 }
 
@@ -114,6 +114,7 @@ function fromRow(r: Row): Order {
     courierRegNo,
     courierName: r.rider_name ?? (courierRegNo ? x.cn : undefined) ?? undefined,
     courierUpi: r.rider_upi ?? (courierRegNo ? x.cu : undefined) ?? undefined,
+    courierPhone: r.rider_phone ?? (courierRegNo ? x.cp : undefined) ?? undefined,
     size,
     pickup,
     dropoff: block ? (/block/i.test(block) ? block : `${block} block`) : 'Your block',
@@ -121,6 +122,7 @@ function fromRow(r: Row): Order {
     fare: r.delivery_fee ?? x.fee ?? quoteFare(size, distanceKm),
     note: r.special_instructions || r.order_instructions || undefined,
     pickupOtp: r.pickup_otp ?? x.po ?? undefined,
+    driverPhone: r.driver_phone ?? x.dp ?? undefined,
     state: FROM_STATUS[r.delivery_status] ?? 'ORDER_PLACED',
     createdAt,
     updatedAt,
@@ -145,6 +147,7 @@ function toRow(o: Order): Row {
     requester_reg_no: o.customerRegNo,
     delivery_fee: o.fare,
     pickup_otp: o.pickupOtp ?? null,
+    driver_phone: o.driverPhone ?? null,
     updated_at: iso(o.updatedAt),
     [SIDECAR]: sidecarOf(o),
   };
@@ -181,6 +184,8 @@ interface OrdersState {
   confirmHandover: (orderId: string, code: string) => Promise<'ok' | 'wrong' | 'expired'>;
   cancel: (orderId: string) => void;
   rate: (orderId: string, rating: number) => void;
+  /** Customer adds the platform driver's number once the platform shares it. */
+  setDriverPhone: (orderId: string, phone: string) => void;
   /** Customer report flags the order DISPUTED. Courier report releases it back to the pool. */
   report: (orderId: string, by: 'customer' | 'courier', reason: string, note?: string) => void;
   reset: () => void;
@@ -287,13 +292,15 @@ export const useOrders = create<OrdersState>()(
         const o = get().orders[orderId];
         if (!o) return 'missing';
         if (o.state !== 'ORDER_PLACED') return 'taken';
-        const courierName = useAuth.getState().user?.name;
+        const me = useAuth.getState().user;
+        const courierName = me?.name;
+        const courierPhone = me?.phone;
         seq++;
         // The conditional write: only succeeds if still unassigned.
-        const taken: Order = { ...o, courierRegNo, courierName, courierUpi, state: 'AGENT_ASSIGNED', updatedAt: now() };
+        const taken: Order = { ...o, courierRegNo, courierName, courierUpi, courierPhone, state: 'AGENT_ASSIGNED', updatedAt: now() };
         const { data, error } = await tolerant(
           (p) => supabase.from('orders').update(p).eq('id', orderId).eq('delivery_status', 'available').select(),
-          { delivery_status: 'allocated', rider_reg_no: courierRegNo, rider_name: courierName ?? null, rider_upi: courierUpi ?? null, updated_at: iso(), [SIDECAR]: sidecarOf(taken) },
+          { delivery_status: 'allocated', rider_reg_no: courierRegNo, rider_name: courierName ?? null, rider_upi: courierUpi ?? null, rider_phone: courierPhone ?? null, updated_at: iso(), [SIDECAR]: sidecarOf(taken) },
         );
         if (error) return 'offline';
         if (!data?.length) {
@@ -336,14 +343,19 @@ export const useOrders = create<OrdersState>()(
       },
       cancel: (orderId) => patch(orderId, { state: 'CANCELLED' }, { delivery_status: 'cancelled' }),
       rate: (orderId, rating) => patch(orderId, { rating }, { rating }),
+      setDriverPhone: (orderId, phone) => {
+        const p = phone.trim() || undefined;
+        if (get().orders[orderId]?.driverPhone === p) return;
+        patch(orderId, { driverPhone: p }, { driver_phone: p ?? null });
+      },
       report: (orderId, by, reason, note) => {
         const report = { by, reason, note: note || undefined, at: now() };
         const remote = { report_by: by, report_reason: reason, report_note: note || null, reported_at: iso() };
         if (by === 'courier') {
           patch(
             orderId,
-            { report, courierRegNo: undefined, courierName: undefined, courierUpi: undefined, otp: undefined, state: 'ORDER_PLACED' },
-            { ...remote, delivery_status: 'available', rider_reg_no: null, rider_name: null, rider_upi: null, delivery_pin: null, pin_expires_at: null },
+            { report, courierRegNo: undefined, courierName: undefined, courierUpi: undefined, courierPhone: undefined, otp: undefined, state: 'ORDER_PLACED' },
+            { ...remote, delivery_status: 'available', rider_reg_no: null, rider_name: null, rider_upi: null, rider_phone: null, delivery_pin: null, pin_expires_at: null },
           );
         } else {
           patch(orderId, { report, state: 'DISPUTED' }, { ...remote, delivery_status: 'disputed' });

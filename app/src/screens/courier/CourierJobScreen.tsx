@@ -20,7 +20,6 @@ type Props = NativeStackScreenProps<AppStackParams, 'CourierJob'>;
 const POINTS = ['Main Gate', 'Amazon Pick Up Point'] as const;
 const SIZE_LABEL = { S: 'Regular', M: 'Regular', L: 'Large', XL: 'Large' } as const;
 // ponytail: driver details come from the delivery platform; mocked until that integration exists
-const DRIVER = { name: 'Ramesh K.', phone: '+91 9XXXX 21847' };
 
 const CHIP: Record<string, string> = {
   ORDER_PLACED: 'Open order',
@@ -217,8 +216,7 @@ function Details({ order }: { order: Order }) {
     ['Parcel size', SIZE_LABEL[order.size], 'tag'],
     ['Ordered by', order.customerName ?? order.customerRegNo, undefined],
     ['Drop-off', order.dropoff, undefined],
-    ['Delivery driver', order.pickup === 'Amazon Pick Up Point' ? 'Amazon Logistics' : DRIVER.name, undefined],
-    ['Driver phone', order.pickup === 'Amazon Pick Up Point' ? '—' : DRIVER.phone, 'mono'],
+    ['Driver phone', order.driverPhone ?? 'Not shared yet', order.driverPhone ? 'mono' : undefined],
     ['You earn', `₹${order.fare}`, undefined],
   ];
   return (

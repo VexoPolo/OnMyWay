@@ -1,11 +1,14 @@
 import { useRef, useState } from 'react';
-import { Animated, PanResponder, StyleSheet, View } from 'react-native';
+import { Animated, PanResponder, Platform, StyleSheet, View } from 'react-native';
 import { colors, fonts } from '../theme';
 import { T } from './Text';
 
 const H = 60;
 const THUMB = 52;
 const PAD = 4;
+const NATIVE = Platform.OS !== 'web';
+// Stops the browser from scrolling the page while the thumb is dragged.
+const NO_TOUCH_SCROLL = Platform.OS === 'web' ? ({ touchAction: 'none', userSelect: 'none', cursor: 'grab' } as object) : undefined;
 
 /** Drag the thumb to the end to fire. Springs back if released early. */
 export function SlideToComplete({ label = 'Slide to complete', onComplete }: { label?: string; onComplete: () => void }) {
@@ -18,17 +21,21 @@ export function SlideToComplete({ label = 'Slide to complete', onComplete }: { l
     PanResponder.create({
       onStartShouldSetPanResponder: () => !done,
       onMoveShouldSetPanResponder: () => !done,
+      // Keep the gesture even when the surrounding ScrollView wants to scroll — that tug is what feels janky.
+      onPanResponderTerminationRequest: () => false,
+      onShouldBlockNativeResponder: () => true,
       onPanResponderMove: (_, g) => x.setValue(Math.min(Math.max(0, g.dx), max)),
       onPanResponderRelease: (_, g) => {
-        if (g.dx >= max * 0.85) {
-          Animated.timing(x, { toValue: max, duration: 120, useNativeDriver: true }).start(() => {
+        if (g.dx >= max * 0.7 || g.vx > 1.2) {
+          Animated.spring(x, { toValue: max, useNativeDriver: NATIVE, speed: 24, bounciness: 0 }).start(() => {
             setDone(true);
             onComplete();
           });
         } else {
-          Animated.spring(x, { toValue: 0, useNativeDriver: true, bounciness: 6 }).start();
+          Animated.spring(x, { toValue: 0, useNativeDriver: NATIVE, speed: 14, bounciness: 4 }).start();
         }
       },
+      onPanResponderTerminate: () => Animated.spring(x, { toValue: 0, useNativeDriver: NATIVE, speed: 14, bounciness: 4 }).start(),
     }),
   ).current;
 
@@ -40,7 +47,7 @@ export function SlideToComplete({ label = 'Slide to complete', onComplete }: { l
       <Animated.View style={[s.fill, { width: fillW }]} />
       <Animated.Text style={[s.label, { opacity: labelOpacity }]}>{done ? '' : label}</Animated.Text>
       {done && <T style={s.doneLabel}>Completed</T>}
-      <Animated.View {...pan.panHandlers} style={[s.thumb, { transform: [{ translateX: x }] }]}>
+      <Animated.View {...pan.panHandlers} style={[s.thumb, NO_TOUCH_SCROLL, { transform: [{ translateX: x }] }]}>
         <T style={s.chev}>{done ? '✓' : '›'}</T>
       </Animated.View>
     </View>
