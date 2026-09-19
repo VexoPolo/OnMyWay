@@ -10,6 +10,7 @@ import { ProfileScreen } from '../screens/ProfileScreen';
 import { RegisterScreen } from '../screens/auth/RegisterScreen';
 import { RoleScreen } from '../screens/auth/RoleScreen';
 import { SignInScreen } from '../screens/auth/SignInScreen';
+import { WelcomeScreen } from '../screens/auth/WelcomeScreen';
 import { CourierJobScreen } from '../screens/courier/CourierJobScreen';
 import { DeliveredScreen } from '../screens/customer/DeliveredScreen';
 import { HandoverScreen } from '../screens/customer/HandoverScreen';
@@ -72,6 +73,7 @@ export function RootNavigator() {
     <NavigationContainer theme={theme}>
       {!user ? (
         <Auth.Navigator screenOptions={noHeader}>
+          <Auth.Screen name="Welcome" component={WelcomeScreen} />
           <Auth.Screen name="Register" component={RegisterScreen} />
           <Auth.Screen name="SignIn" component={SignInScreen} />
         </Auth.Navigator>

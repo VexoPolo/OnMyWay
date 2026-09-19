@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OnMyWay — Welcome screen, both sides</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--ground:#0A0A0A;--surface:#171717;--line:#232326;--a:#FCD34D;--b:#F59E0B;--on-brand:#1F1300;--brand-dark:#FBBF24;--muted:#8a8a90;--ink:#F4F4F5;--error:#EF4444;--pin-a:#8B5CF6;--pin-b:#EF4444}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(120% 80% at 50% 0%,rgba(245,158,11,.08),transparent 55%),var(--ground);min-height:100svh;padding:48px 20px 80px;font-family:'IBM Plex Sans',sans-serif;color:var(--ink)}
+.page-head{text-align:center;margin-bottom:34px}
+.page-head h1{font-family:Archivo,sans-serif;font-weight:900;font-size:28px;letter-spacing:-.02em}
+.page-head p{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.08em;color:var(--muted);margin-top:8px}
+.page-head b{color:var(--brand-dark);font-weight:500}
+.frames-row{display:flex;gap:36px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+.frame{display:flex;flex-direction:column;align-items:center;gap:16px}
+.frame-label{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:center;max-width:390px;line-height:1.6}
+.frame-label b{color:var(--ink);font-weight:500;display:block;font-size:13px}
+.device{width:390px;height:844px;padding:11px;border-radius:58px;background:linear-gradient(150deg,#2c2c31,#131316 45%,#2a2a2f);box-shadow:0 44px 90px -30px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.05);position:relative}
+.viewport{position:relative;width:100%;height:100%;border-radius:48px;overflow:hidden;background:var(--ground)}
+.island{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:104px;height:30px;background:#000;border-radius:16px;z-index:6}
+.statusbar{position:absolute;top:16px;left:0;right:0;display:flex;justify-content:space-between;padding:0 30px;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:var(--ink);z-index:6;pointer-events:none}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;padding:62px 22px 26px;gap:14px;overflow:hidden}
+.btn{width:100%;padding:16px;border-radius:13px;border:none;background:linear-gradient(135deg,var(--a),var(--b));color:var(--on-brand);font-family:'IBM Plex Sans',sans-serif;font-size:15px;font-weight:600;text-align:center}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.caption{font-size:12.5px;color:var(--muted);line-height:1.5}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.logo-full{width:210px;height:calc(210px * 221 / 532);background:url(../assets/logo/onmyway-mark.png) center/contain no-repeat;margin:0 auto}
+.logo-word{width:140px;height:calc(140px * 127 / 502);background:url(../assets/logo/onmyway-wordmark.png) center/contain no-repeat;margin:0 auto}
+.mark-sm{width:64px;height:calc(64px * 221 / 532);background:url(../assets/logo/onmyway-mark.png) left/contain no-repeat}
+.actions{margin-top:auto;display:flex;flex-direction:column;gap:10px}
+.foot{text-align:center;font-size:11px;color:var(--muted)}
+.foot b{color:var(--brand-dark);font-weight:500}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:var(--brand-dark);border:1px solid rgba(252,211,77,.3);border-radius:999px;padding:5px 10px}
+.top{display:flex;align-items:center;justify-content:space-between}
+/* ---------- E · two lanes ---------- */
+.E .glow{position:absolute;inset:0;background:radial-gradient(70% 40% at 50% 0%,rgba(245,158,11,.22),transparent 70%)}
+.E .hero{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding-top:6px}
+.E h2{font-family:Archivo,sans-serif;font-weight:900;font-size:24px;letter-spacing:-.02em;line-height:1.1;margin-top:4px}
+.E .lanes{display:flex;gap:10px;flex:1;margin-top:6px}
+.E .lane{flex:1;position:relative;border:1px solid var(--line);border-radius:18px;background:var(--surface);padding:16px 14px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.E .lane.left{background:linear-gradient(180deg,rgba(139,92,246,.16),var(--surface) 60%)}
+.E .lane.right{background:linear-gradient(180deg,rgba(245,158,11,.20),var(--surface) 60%)}
+.E .lane .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:20px;background:var(--ground);border:1px solid var(--line)}
+.E .lane .t{font-family:Archivo,sans-serif;font-weight:800;font-size:17px;letter-spacing:-.01em;line-height:1.1;margin-top:auto}
+.E .lane .d{font-size:12px;color:var(--muted);line-height:1.45}
+.E .lane .tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--brand-dark)}
+.E .lane.left .tag{color:#B79CFF}
+.E .arrow{position:absolute;bottom:16px;right:14px;font-size:14px;color:var(--muted)}
+.E .join{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin:6px 0 2px}
+/* ---------- F · one route, two people ---------- */
+.F .screen{padding-top:68px}
+.F h2{font-family:Archivo,sans-serif;font-weight:900;font-size:44px;letter-spacing:-.035em;line-height:.95;text-transform:uppercase;margin-top:14px}
+.F h2 em{font-style:normal;color:var(--brand-dark)}
+.F .scene{position:relative;flex:1;margin:6px -22px 0;min-height:260px}
+.F .scene svg{position:absolute;inset:0;width:100%;height:100%}
+.F .who{position:absolute;display:flex;flex-direction:column;gap:3px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:9px 11px;max-width:160px}
+.F .who b{font-size:13px;font-weight:600}
+.F .who span{font-size:11px;color:var(--muted);line-height:1.35}
+.F .who i{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--brand-dark)}
+.F .who.req i{color:#B79CFF}
+.F .lead{font-size:14px;color:var(--muted);line-height:1.5;margin-bottom:8px}
+/* ---------- G · switching headline ---------- */
+.G .screen{padding-top:64px}
+.G .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}
+.G .seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;gap:4px}
+.G .seg span{font-size:12.5px;font-weight:600;padding:8px 16px;border-radius:999px;color:var(--muted)}
+.G .seg span.on{background:linear-gradient(135deg,var(--a),var(--b));color:var(--on-brand)}
+.G h2{font-family:Archivo,sans-serif;font-weight:900;font-size:34px;letter-spacing:-.03em;line-height:1.02}
+.G .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.G .cell{border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:14px;text-align:left}
+.G .cell .k{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.G .cell .v{font-family:Archivo,sans-serif;font-weight:800;font-size:22px;letter-spacing:-.02em;margin-top:4px}
+.G .cell .s{font-size:11.5px;color:var(--muted);margin-top:2px;line-height:1.4}
+.G .cell.req .v{color:#B79CFF}.G .cell.cou .v{color:var(--brand-dark)}
+.G .dots{display:flex;gap:6px;justify-content:center}
+.G .dots i{width:6px;height:6px;border-radius:3px;background:var(--line)}.G .dots i.on{background:var(--brand-dark);width:18px}
+</style>
+</head>
+<body>
+<div class="page-head">
+  <h1>Welcome screen — for both sides</h1>
+  <p>Requester and courier get equal billing · <b>390 × 844</b> · same tokens, logo untouched</p>
+</div>
+
+<div class="frames-row">
+
+<!-- E -->
+<div class="frame">
+  <div class="device"><div class="viewport E"><div class="island"></div><div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
+    <div class="glow"></div>
+    <div class="screen">
+      <div class="hero">
+        <div class="logo-full"></div>
+        <div class="logo-word"></div>
+        <h2>Two ways in. One walk.</h2>
+        <div class="caption" style="max-width:290px">Parcels at the gate, carried by students already heading to the blocks.</div>
+      </div>
+      <div class="lanes">
+        <div class="lane left">
+          <div class="ic">📦</div>
+          <div class="tag">I NEED IT BROUGHT</div>
+          <div class="t">Get your parcel to your door</div>
+          <div class="d">Amazon at the gate? Someone brings it for ₹20.</div>
+          <div class="arrow">›</div>
+        </div>
+        <div class="lane right">
+          <div class="ic">🚶</div>
+          <div class="tag">I'M WALKING PAST</div>
+          <div class="t">Carry one, earn on the way</div>
+          <div class="d">Heading back anyway? Pick one up, get paid.</div>
+          <div class="arrow">›</div>
+        </div>
+      </div>
+      <div class="join">Same account · switch any time</div>
+      <div class="actions" style="margin-top:0">
+        <button class="btn">Create account</button>
+        <button class="btn ghost">I already have an account</button>
+      </div>
+    </div>
+  </div></div>
+  <div class="frame-label"><b>E · Two lanes</b>Requester and courier side by side, same size, same weight. "Same account · switch any time" says it out loud.</div>
+</div>
+
+<!-- F -->
+<div class="frame">
+  <div class="device"><div class="viewport F"><div class="island"></div><div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
+    <div class="screen">
+      <div class="top"><div class="mark-sm"></div><span class="chip">VIT VELLORE</span></div>
+      <h2>One <em>waits.</em><br>One <em>walks.</em><br>Both win.</h2>
+      <div class="scene">
+        <svg viewBox="0 0 390 260" fill="none">
+          <path d="M40 210 C 90 210, 130 120, 200 120 S 320 90, 350 50" stroke="#F59E0B" stroke-width="2.5" stroke-dasharray="6 7" stroke-linecap="round"/>
+          <circle cx="40" cy="210" r="9" fill="#F59E0B"/><circle cx="40" cy="210" r="20" fill="#F59E0B" opacity=".16"/>
+          <circle cx="350" cy="50" r="9" fill="#8B5CF6"/><circle cx="350" cy="50" r="20" fill="#8B5CF6" opacity=".16"/>
+          <g transform="translate(186,86)"><circle cx="12" cy="0" r="26" fill="#FCD34D" opacity=".12"/><circle cx="12" cy="-8" r="6" fill="#FCD34D"/><path d="M12 -1 v16 M12 5 l-10 7 M12 5 l10 6 M12 15 l-7 12 M12 15 l7 12" stroke="#FCD34D" stroke-width="3" stroke-linecap="round"/><rect x="20" y="2" width="14" height="11" rx="2" fill="#F59E0B"/></g>
+        </svg>
+        <div class="who" style="left:22px;top:20px"><i>COURIER</i><b>Going that way anyway</b><span>Picks it up at the gate, earns ₹20–30 per parcel.</span></div>
+        <div class="who req" style="right:22px;bottom:14px;text-align:right;align-items:flex-end"><i>REQUESTER</i><b>Waiting in the block</b><span>Gets it at the door, pays cash or UPI.</span></div>
+      </div>
+      <div class="lead">Whichever one you are today. Same account, switch any time.</div>
+      <div class="actions" style="margin-top:0">
+        <button class="btn">Get started</button>
+        <button class="btn ghost">Sign in</button>
+      </div>
+    </div>
+  </div></div>
+  <div class="frame-label"><b>F · One route, two people</b>The route sketch with a card at each end — courier at the gate, requester at the block. Headline gives them equal weight.</div>
+</div>
+
+<!-- G -->
+<div class="frame">
+  <div class="device"><div class="viewport G"><div class="island"></div><div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
+    <div class="screen">
+      <div class="top"><div class="mark-sm"></div><span class="mono" style="color:var(--brand-dark)">campus delivery</span></div>
+      <div class="center">
+        <div class="seg"><span class="on">Get it delivered</span><span>Deliver &amp; earn</span></div>
+        <h2>Your parcel's at the gate. Someone's already on the way.</h2>
+        <div class="caption" style="max-width:290px">Swipe to see the other side — the same app lets you carry parcels back and earn.</div>
+        <div class="pair">
+          <div class="cell req"><div class="k">Requester</div><div class="v">₹20</div><div class="s">flat, to your door</div></div>
+          <div class="cell cou"><div class="k">Courier</div><div class="v">₹20–30</div><div class="s">per parcel, kept 100%</div></div>
+        </div>
+        <div class="dots"><i class="on"></i><i></i></div>
+      </div>
+      <div class="actions" style="margin-top:0">
+        <button class="btn">Create account</button>
+        <button class="btn ghost">I already have an account</button>
+        <div class="foot">One account for both · pick a role after sign-up</div>
+      </div>
+    </div>
+  </div></div>
+  <div class="frame-label"><b>G · Flip the headline</b>A toggle swaps the pitch between "Get it delivered" and "Deliver &amp; earn" (auto-flips every few seconds). Price cards show both sides.</div>
+</div>
+
+</div>
+</body>
+</html>

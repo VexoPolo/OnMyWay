@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OnMyWay — Welcome screen options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--ground:#0A0A0A;--surface:#171717;--line:#232326;--a:#FCD34D;--b:#F59E0B;--on-brand:#1F1300;--brand-dark:#FBBF24;--muted:#8a8a90;--ink:#F4F4F5;--error:#EF4444;--pin-a:#8B5CF6;--pin-b:#EF4444}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(120% 80% at 50% 0%,rgba(245,158,11,.08),transparent 55%),var(--ground);min-height:100svh;padding:48px 20px 80px;font-family:'IBM Plex Sans',sans-serif;color:var(--ink)}
+.page-head{text-align:center;margin-bottom:34px}
+.page-head h1{font-family:Archivo,sans-serif;font-weight:900;font-size:28px;letter-spacing:-.02em}
+.page-head p{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.08em;color:var(--muted);margin-top:8px}
+.page-head b{color:var(--brand-dark);font-weight:500}
+.frames-row{display:flex;gap:36px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+.frame{display:flex;flex-direction:column;align-items:center;gap:16px}
+.frame-label{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:center;max-width:390px;line-height:1.6}
+.frame-label b{color:var(--ink);font-weight:500;display:block;font-size:13px}
+.device{width:390px;height:844px;padding:11px;border-radius:58px;background:linear-gradient(150deg,#2c2c31,#131316 45%,#2a2a2f);box-shadow:0 44px 90px -30px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.05);position:relative}
+.viewport{position:relative;width:100%;height:100%;border-radius:48px;overflow:hidden;background:var(--ground)}
+.island{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:104px;height:30px;background:#000;border-radius:16px;z-index:6}
+.statusbar{position:absolute;top:16px;left:0;right:0;display:flex;justify-content:space-between;padding:0 30px;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:var(--ink);z-index:6;pointer-events:none}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;padding:62px 22px 26px;gap:14px;overflow:hidden}
+.btn{width:100%;padding:16px;border-radius:13px;border:none;background:linear-gradient(135deg,var(--a),var(--b));color:var(--on-brand);font-family:'IBM Plex Sans',sans-serif;font-size:15px;font-weight:600;text-align:center}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.btn.outline{background:transparent;color:var(--ink);border:1px solid rgba(255,255,255,.18)}
+.caption{font-size:12.5px;color:var(--muted);line-height:1.5}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.logo-full{width:230px;height:calc(230px * 221 / 532);background:url(../assets/logo/onmyway-mark.png) center/contain no-repeat;margin:0 auto}
+.logo-word{width:150px;height:calc(150px * 127 / 502);background:url(../assets/logo/onmyway-wordmark.png) center/contain no-repeat;margin:0 auto}
+.mark-sm{width:64px;height:calc(64px * 221 / 532);background:url(../assets/logo/onmyway-mark.png) left/contain no-repeat}
+.actions{margin-top:auto;display:flex;flex-direction:column;gap:10px}
+.foot{text-align:center;font-size:11px;color:var(--muted)}
+.foot b{color:var(--brand-dark);font-weight:500}
+.walker{width:22px;height:22px;display:block}
+/* ---------- A · hero + three points ---------- */
+.A .glow{position:absolute;inset:0;background:radial-gradient(70% 45% at 50% 0%,rgba(245,158,11,.26),transparent 70%)}
+.A .hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding-top:10px}
+.A h2{font-family:Archivo,sans-serif;font-weight:900;font-size:30px;letter-spacing:-.02em;line-height:1.1}
+.A .points{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+.A .point{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.A .pi{width:36px;height:36px;border-radius:10px;background:var(--b);display:grid;place-items:center;color:var(--on-brand);font-family:Archivo,sans-serif;font-weight:900;font-size:16px;flex:none}
+.A .pk{font-size:14px;font-weight:600}
+.A .pv{font-size:12px;color:var(--muted);margin-top:2px}
+/* ---------- B · big type, editorial ---------- */
+.B .screen{padding-top:70px}
+.B .top{display:flex;align-items:center;justify-content:space-between}
+.B .chip{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:var(--brand-dark);border:1px solid rgba(252,211,77,.3);border-radius:999px;padding:5px 10px}
+.B h2{font-family:Archivo,sans-serif;font-weight:900;font-size:56px;letter-spacing:-.04em;line-height:.92;text-transform:uppercase;margin-top:auto}
+.B h2 em{font-style:normal;color:var(--brand-dark)}
+.B .lead{font-size:15px;color:var(--muted);line-height:1.5;max-width:300px;margin-top:14px}
+.B .route{position:relative;height:110px;margin:26px 0 8px}
+.B .route svg{position:absolute;inset:0;width:100%;height:100%}
+.B .stats{display:flex;gap:18px;margin-bottom:16px}
+.B .stat b{display:block;font-family:Archivo,sans-serif;font-weight:800;font-size:18px;letter-spacing:-.02em}
+.B .stat span{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+/* ---------- C · split, glow card ---------- */
+.C .screen{padding:0}
+.C .upper{flex:1.15;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:70px 22px 30px;background:radial-gradient(80% 60% at 50% 30%,rgba(245,158,11,.30),rgba(10,10,10,0) 70%)}
+.C .upper h2{font-family:Archivo,sans-serif;font-weight:900;font-size:26px;letter-spacing:-.02em;line-height:1.15}
+.C .card{background:var(--surface);border-top:1px solid var(--line);border-radius:30px 30px 0 0;padding:26px 22px 26px;display:flex;flex-direction:column;gap:12px}
+.C .card .title{font-family:Archivo,sans-serif;font-weight:800;font-size:19px;letter-spacing:-.01em}
+.C .strip{display:flex;justify-content:space-between;border:1px dashed var(--line);border-radius:12px;padding:10px 14px;margin-bottom:4px}
+.C .strip div{text-align:center}
+.C .strip b{display:block;font-family:Archivo,sans-serif;font-weight:800;font-size:15px;color:var(--brand-dark)}
+.C .strip span{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.C .grip{width:36px;height:4px;border-radius:2px;background:var(--line);margin:-10px auto 4px}
+/* ---------- D · route illustration ---------- */
+.D .screen{padding-top:64px}
+.D .map{position:relative;flex:1;border:1px solid var(--line);border-radius:22px;background:
+  linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px) 0 0/28px 28px,
+  linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px) 0 0/28px 28px,var(--surface);overflow:hidden;margin-top:6px}
+.D .map svg{position:absolute;inset:0;width:100%;height:100%}
+.D .tag{position:absolute;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;background:var(--ground);border:1px solid var(--line);border-radius:8px;padding:5px 8px;color:var(--ink)}
+.D .tag.brand{border-color:rgba(252,211,77,.35);color:var(--brand-dark)}
+.D h2{font-family:Archivo,sans-serif;font-weight:900;font-size:28px;letter-spacing:-.02em;line-height:1.1;margin-top:18px}
+.D .lead{font-size:13.5px;color:var(--muted);line-height:1.5;margin-top:6px;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="page-head">
+  <h1>Welcome screen — pick one</h1>
+  <p>What you see right after the splash · <b>390 × 844</b> · same tokens, logo untouched</p>
+</div>
+
+<div class="frames-row">
+
+<!-- A -->
+<div class="frame">
+  <div class="device"><div class="viewport A"><div class="island"></div><div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
+    <div class="glow"></div>
+    <div class="screen">
+      <div class="hero">
+        <div class="logo-full"></div>
+        <div class="logo-word"></div>
+        <h2>Something at the gate?</h2>
+        <div class="caption" style="max-width:300px">Someone's already walking back to your block. They bring it, you pay them a little.</div>
+      </div>
+      <div class="points">
+        <div class="point"><div class="pi">⌖</div><div><div class="pk">Main Gate &amp; Amazon point</div><div class="pv">Parcels waiting there get picked up</div></div></div>
+        <div class="point"><div class="pi">✓</div><div><div class="pk">Students only</div><div class="pv">Everyone is verified by reg number</div></div></div>
+        <div class="point"><div class="pi">₹</div><div><div class="pk">₹20 – ₹30 a pickup</div><div class="pv">Paid straight to the courier, cash or UPI</div></div></div>
+      </div>
+      <div class="actions">
+        <button class="btn">Create account</button>
+        <button class="btn ghost">I already have an account</button>
+        <div class="foot">VIT Vellore · campus peer-to-peer delivery</div>
+      </div>
+    </div>
+  </div></div>
+  <div class="frame-label"><b>A · Hero + three points</b>Logo up top, three reasons, two buttons. Safest, explains the product in one glance.</div>
+</div>
+
+<!-- B -->
+<div class="frame">
+  <div class="device"><div class="viewport B"><div class="island"></div><div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
+    <div class="screen">
+      <div class="top"><div class="mark-sm"></div><span class="chip">VIT VELLORE</span></div>
+      <h2>Some<wbr>thing at the <em>gate?</em></h2>
+      <div class="lead">Skip the walk. A student already heading your way brings it to your block.</div>
+      <div class="route">
+        <svg viewBox="0 0 346 110" fill="none">
+          <path d="M18 78 C 90 78, 120 30, 190 30 S 300 60, 328 34" stroke="#F59E0B" stroke-width="2" stroke-dasharray="5 6" stroke-linecap="round"/>
+          <circle cx="18" cy="78" r="7" fill="#8B5CF6"/><circle cx="328" cy="34" r="7" fill="#EF4444"/>
+          <g transform="translate(150,6)"><circle cx="9" cy="6" r="4.5" fill="#FCD34D"/><path d="M9 11 v12 M9 15 l-7 6 M9 15 l7 5 M9 23 l-5 9 M9 23 l5 9" stroke="#FCD34D" stroke-width="2.4" stroke-linecap="round"/></g>
+          <text x="6" y="102" font-family="IBM Plex Mono" font-size="10" fill="#8a8a90" letter-spacing="1">MAIN GATE</text>
+          <text x="280" y="20" font-family="IBM Plex Mono" font-size="10" fill="#8a8a90" letter-spacing="1">YOUR BLOCK</text>
+        </svg>
+      </div>
+      <div class="stats"><div class="stat"><b>₹20</b><span>a pickup</span></div><div class="stat"><b>~12 min</b><span>gate → block</span></div><div class="stat"><b>Reg no.</b><span>verified</span></div></div>
+      <div class="actions" style="margin-top:0">
+        <button class="btn">Get started</button>
+        <button class="btn outline">Sign in</button>
+      </div>
+    </div>
+  </div></div>
+  <div class="frame-label"><b>B · Big type, editorial</b>Small mark, giant headline, route sketch, three stats. Most "designed", least text.</div>
+</div>
+
+<!-- C -->
+<div class="frame">
+  <div class="device"><div class="viewport C"><div class="island"></div><div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
+    <div class="screen">
+      <div class="upper">
+        <div class="logo-full"></div>
+        <div class="logo-word"></div>
+        <h2>Parcels at the gate,<br>carried by students<br>already on their way.</h2>
+      </div>
+      <div class="card">
+        <div class="grip"></div>
+        <div class="title">Welcome to OnMyWay</div>
+        <div class="caption">Sign in with your registration number. New here? It takes a minute.</div>
+        <div class="strip"><div><b>₹20–30</b><span>per pickup</span></div><div><b>2</b><span>pickup points</span></div><div><b>VIT</b><span>students only</span></div></div>
+        <button class="btn">Create account</button>
+        <button class="btn ghost">Sign in</button>
+        <div class="foot">By continuing you agree to the <b>campus code of conduct</b></div>
+      </div>
+    </div>
+  </div></div>
+  <div class="frame-label"><b>C · Split with a sheet</b>Glowing logo half on top, bottom sheet with a stat strip and the buttons. Feels like the Role screen's sibling.</div>
+</div>
+
+<!-- D -->
+<div class="frame">
+  <div class="device"><div class="viewport D"><div class="island"></div><div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
+    <div class="screen">
+      <div class="top" style="display:flex;align-items:center;justify-content:space-between"><div class="mark-sm"></div><span class="mono" style="color:var(--brand-dark)">campus delivery</span></div>
+      <div class="map">
+        <svg viewBox="0 0 346 330" fill="none">
+          <path d="M40 270 C 40 200, 120 210, 150 160 S 230 90, 300 62" stroke="#F59E0B" stroke-width="2.5" stroke-dasharray="6 7" stroke-linecap="round"/>
+          <circle cx="40" cy="270" r="9" fill="#8B5CF6"/><circle cx="40" cy="270" r="18" fill="#8B5CF6" opacity=".18"/>
+          <circle cx="300" cy="62" r="9" fill="#EF4444"/><circle cx="300" cy="62" r="18" fill="#EF4444" opacity=".18"/>
+          <g transform="translate(140,120)"><circle cx="12" cy="0" r="24" fill="#F59E0B" opacity=".14"/><circle cx="12" cy="-7" r="5.5" fill="#FCD34D"/><path d="M12 -1 v15 M12 4 l-9 7 M12 4 l9 6 M12 14 l-6 11 M12 14 l6 11" stroke="#FCD34D" stroke-width="3" stroke-linecap="round"/></g>
+        </svg>
+        <span class="tag" style="left:14px;top:206px">MAIN GATE</span>
+        <span class="tag" style="right:14px;top:78px">MH-F BLOCK</span>
+        <span class="tag brand" style="left:196px;top:150px">₹20 · 12 MIN</span>
+      </div>
+      <h2>Someone's already on the way.</h2>
+      <div class="lead">Get your Amazon parcel carried from the gate to your door by a student heading back anyway — or be that student and earn.</div>
+      <div class="actions" style="margin-top:0">
+        <button class="btn">Create account</button>
+        <button class="btn ghost">I already have an account</button>
+      </div>
+    </div>
+  </div></div>
+  <div class="frame-label"><b>D · Route illustration</b>Schematic map with the walker mid-route, then the pitch and buttons. Shows the product instead of describing it.</div>
+</div>
+
+</div>
+</body>
+</html>
