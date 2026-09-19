@@ -36,7 +36,7 @@ export function NewOrderScreen({ navigation }: Props) {
   const tid = trackingId.trim().toUpperCase();
   // Amazon's kiosk hands parcels over by tracking ID; at the gate the courier goes by name and block.
   const needsTid = pickup === 'Amazon Pick Up Point';
-  const ready = (needsTid ? tid.length >= 6 : tid.length === 0 || tid.length >= 6) && (pickupOtp.length === 0 || pickupOtp.length >= 4);
+  const ready = (needsTid ? tid.length >= 6 : tid.length === 0 || tid.length >= 6) && (pickupOtp.length === 0 || pickupOtp.length === 4);
 
   const submit = () => {
     const order = place({
@@ -95,9 +95,9 @@ export function NewOrderScreen({ navigation }: Props) {
       <View>
         <Field
           label="Collection OTP (if the platform gave you one)"
-          placeholder="· · · · · ·"
+          placeholder="· · · ·"
           keyboardType="number-pad"
-          maxLength={6}
+          maxLength={4}
           value={pickupOtp}
           onChangeText={(t) => setPickupOtp(t.replace(/\D/g, ''))}
           style={{ textAlign: 'center', fontFamily: fonts.mono, letterSpacing: 6, fontSize: 17 }}

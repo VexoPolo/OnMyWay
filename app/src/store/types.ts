@@ -53,7 +53,7 @@ export interface Order {
   state: OrderState;
   createdAt: number;
   updatedAt: number;
-  /** 6-digit handover code + expiry; generated when courier arrives */
+  /** 4-digit handover code + expiry; generated when courier arrives */
   otp?: { code: string; expiresAt: number };
   courierUpi?: string;
   rating?: number; // 1-5, set by the customer once delivered

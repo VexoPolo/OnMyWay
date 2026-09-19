@@ -9,8 +9,8 @@ interface Props {
   error?: boolean;
 }
 
-/** Six boxes, one hidden input. Filled boxes get the brand border. */
-export function OtpInput({ value, onChange, length = 6, error }: Props) {
+/** Four boxes, one hidden input. Filled boxes get the brand border. */
+export function OtpInput({ value, onChange, length = 4, error }: Props) {
   const ref = useRef<TextInput>(null);
   const digits = value.padEnd(length).split('').slice(0, length);
   return (
@@ -41,8 +41,8 @@ export function OtpInput({ value, onChange, length = 6, error }: Props) {
 const s = StyleSheet.create({
   row: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
   box: {
-    width: 48,
-    height: 56,
+    width: 60,
+    height: 64,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
     borderWidth: 1,

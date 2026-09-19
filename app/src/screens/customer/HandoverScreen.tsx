@@ -11,7 +11,7 @@ import { colors, fonts, radius, space } from '../../theme';
 
 type Props = NativeStackScreenProps<AppStackParams, 'Handover'>;
 
-/** Customer side: read the six digits aloud. The courier types them. Neither swaps a number. */
+/** Customer side: read the four digits aloud. The courier types them. Neither swaps a number. */
 export function HandoverScreen({ navigation, route }: Props) {
   const { orderId } = route.params;
   const order = useOrders((s) => s.orders[orderId]);
@@ -42,7 +42,7 @@ export function HandoverScreen({ navigation, route }: Props) {
     <Screen>
       <View style={s.top}>
         <T kind="eyebrow">Courier is here</T>
-        <T kind="h1">Six digits</T>
+        <T kind="h1">Four digits</T>
         <T kind="caption">Read this to the courier. It proves the parcel reached the right person.</T>
       </View>
       <View style={s.code}>
@@ -79,10 +79,10 @@ export function HandoverScreen({ navigation, route }: Props) {
 
 const s = StyleSheet.create({
   top: { gap: space.sm, paddingTop: space.lg },
-  code: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginVertical: space.xl },
+  code: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginVertical: space.xl },
   box: {
-    width: 50,
-    height: 64,
+    width: 66,
+    height: 80,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -90,6 +90,6 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  digit: { fontFamily: fonts.monoMedium, fontSize: 30, color: colors.ink },
+  digit: { fontFamily: fonts.monoMedium, fontSize: 38, color: colors.ink },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 });

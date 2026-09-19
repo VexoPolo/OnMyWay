@@ -148,9 +148,9 @@ export function CourierJobScreen({ navigation, route }: Props) {
       {order.state === 'OUT_FOR_DELIVERY' && mine && <Button title="I've arrived" onPress={() => arrive(orderId)} />}
       {order.state === 'ARRIVED' && mine && (
         <View style={{ gap: space.md }}>
-          <T kind="caption">Ask the customer for their six digits.</T>
+          <T kind="caption">Ask the customer for their four digits.</T>
           <OtpInput value={code} onChange={setCode} error={!!msg} />
-          <Button title="Verify handover" onPress={onVerify} disabled={code.length < 6} />
+          <Button title="Verify handover" onPress={onVerify} disabled={code.length < 4} />
         </View>
       )}
       {order.state === 'CONFIRMATION_RECEIVED' && mine && (

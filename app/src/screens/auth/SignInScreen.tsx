@@ -50,9 +50,6 @@ export function SignInScreen({ navigation }: Props) {
         />
         <Field label="Password" placeholder="••••••••" secureTextEntry value={password} onChangeText={setPassword} />
         <Button title="Sign in" onPress={submit} loading={busy} disabled={!regNo || !password} />
-        <T kind="caption" style={s.hint}>
-          We'll text a 6-digit code.
-        </T>
         <Button title="New here? Register" variant="ghost" onPress={() => navigation.navigate('Register')} />
       </View>
     </Screen>
@@ -62,5 +59,4 @@ export function SignInScreen({ navigation }: Props) {
 const s = StyleSheet.create({
   header: { alignItems: 'center', paddingVertical: space.xl },
   form: { gap: space.md, marginTop: space.sm },
-  hint: { textAlign: 'center' },
 });

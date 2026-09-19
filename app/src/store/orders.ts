@@ -162,14 +162,19 @@ const MISSING_COL = /Could not find the '(\w+)' column/;
 type Res = { data: Row[] | null; error: { message: string } | null };
 /** Runs a write; if PostgREST rejects a column the live table lacks, retries without it. */
 async function tolerant(run: (payload: Row) => PromiseLike<Res>, payload: Row): Promise<Res> {
-  for (let i = 0; i < 16; i++) {
-    const res = await run(payload);
-    const col = res.error && MISSING_COL.exec(res.error.message)?.[1];
-    if (!col) return res;
-    payload = { ...payload };
-    delete payload[col];
+  inflight++;
+  try {
+    for (let i = 0; i < 16; i++) {
+      const res = await run(payload);
+      const col = res.error && MISSING_COL.exec(res.error.message)?.[1];
+      if (!col) return res;
+      payload = { ...payload };
+      delete payload[col];
+    }
+    return { data: null, error: { message: 'too many unknown columns' } };
+  } finally {
+    inflight--;
   }
-  return { data: null, error: { message: 'too many unknown columns' } };
 }
 
 // ---------------------------------------------------------------------------
@@ -192,8 +197,10 @@ interface OrdersState {
 }
 
 const now = () => Date.now();
-// Bumped on every local write; a fetch that started before a write is thrown away so it can't undo it.
+// A full fetch is thrown away if a write started before it (seq) or is still in flight when it
+// returns (inflight) — otherwise it could wipe an order the server hasn't stored yet.
 let seq = 0;
+let inflight = 0;
 
 function applyRows(rows: Row[]) {
   useOrders.setState((s) => {
@@ -212,7 +219,7 @@ export async function sync() {
     .gte('created_at', iso(now() - 7 * 86_400_000))
     .order('created_at', { ascending: false })
     .limit(300);
-  if (error || !data || at !== seq) return;
+  if (error || !data || at !== seq || inflight > 0) return;
   useOrders.setState((s) => {
     const orders: Record<string, Order> = {};
     for (const r of data) orders[r.id] = merge(s.orders[r.id], fromRow(r));
@@ -320,7 +327,7 @@ export const useOrders = create<OrdersState>()(
         patch(orderId, { state: next }, { delivery_status: TO_STATUS[next] });
       },
       arrive: (orderId) => {
-        const code = String(Math.floor(100000 + Math.random() * 900000));
+        const code = String(Math.floor(1000 + Math.random() * 9000));
         const expiresAt = now() + PIN_TTL;
         patch(orderId, { state: 'ARRIVED', otp: { code, expiresAt } }, { delivery_status: 'reached', delivery_pin: code, pin_expires_at: iso(expiresAt) });
         return code;
