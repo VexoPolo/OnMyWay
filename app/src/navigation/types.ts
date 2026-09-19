@@ -3,7 +3,6 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 export type AuthStackParams = {
   Register: undefined;
   SignIn: undefined;
-  Otp: undefined;
   Role: undefined;
 };
 

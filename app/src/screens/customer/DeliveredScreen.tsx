@@ -21,7 +21,7 @@ export function DeliveredScreen({ navigation, route }: Props) {
   const [reporting, setReporting] = useState(false);
 
   if (!order) return null;
-  const first = order.courierRegNo ?? 'your courier';
+  const first = order.courierName?.split(' ')[0] ?? order.courierRegNo ?? 'your courier';
   const done = order.state === 'DELIVERED';
   const disputed = order.state === 'DISPUTED';
   const mins = Math.max(1, Math.round((order.updatedAt - order.createdAt) / 60000));

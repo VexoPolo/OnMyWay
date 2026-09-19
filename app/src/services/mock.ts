@@ -1,26 +1,15 @@
 /**
- * Mock service layer. Same shape a real API client would have, so swapping in
- * fetch() calls later is a one-file change. Delays are there so the UI's
- * loading states are real.
+ * Sign-in stand-in. Orders and profiles are live in Supabase (see store/orders.ts, store/auth.ts).
  */
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-const REG_RE = /^\d{2}[A-Z]{3}\d{4}$/i; // e.g. 22BCE1234 — VIT style; loosened below for the demo
-
 export const api = {
-  /** Reg number + password → server texts a 6-digit code. Demo code is always 123456. */
+  /** Reg number + password. No server yet — shape check only, so the loading state is real. */
   async signIn(regNo: string, password: string): Promise<{ ok: true } | { ok: false; error: string }> {
     await wait(700);
     if (regNo.trim().length < 5) return { ok: false, error: 'That does not look like a registration number.' };
     if (password.length < 4) return { ok: false, error: 'Password is too short.' };
     return { ok: true };
-  },
-
-  async verifyOtp(regNo: string, code: string): Promise<{ ok: true; token: string; name: string } | { ok: false; error: string }> {
-    await wait(600);
-    if (code !== '123456') return { ok: false, error: 'Wrong code. Try 123456 in the demo.' };
-    const name = regNo.toUpperCase().match(REG_RE) ? 'Student ' + regNo.slice(-4) : 'Student';
-    return { ok: true, token: 'demo.' + Math.random().toString(36).slice(2), name };
   },
 };
 

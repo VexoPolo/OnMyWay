@@ -18,6 +18,7 @@ const REG_RE = /^\d{2}[A-Z]{3}\d{4}$/;
 /** Frame 1 — Verify you're one of us. Step 1 of 3. */
 export function RegisterScreen({ navigation }: Props) {
   const register = useAuth((s) => s.register);
+  const complete = useAuth((s) => s.complete);
   const [name, setName] = useState('');
   const [regNo, setRegNo] = useState('');
   const [email, setEmail] = useState('');
@@ -36,7 +37,7 @@ export function RegisterScreen({ navigation }: Props) {
 
   const submit = () => {
     register({ name: name.trim(), regNo, email: email.trim().toLowerCase(), phone: phone.trim(), block: block! });
-    navigation.navigate('Otp');
+    complete(name.trim()); // root navigator swaps to Role once the user exists
   };
 
   return (
@@ -117,9 +118,6 @@ export function RegisterScreen({ navigation }: Props) {
       </View>
 
       <Button title="Continue" onPress={submit} disabled={!valid} style={{ marginTop: space.sm }} />
-      <T kind="caption" style={s.foot}>
-        Step 1 of 3 · next: <T kind="caption" style={{ color: colors.brandDark }}>verify OTP</T>
-      </T>
       <Pressable onPress={() => navigation.navigate('SignIn')}>
         <T kind="caption" style={s.foot}>
           Already registered? <T kind="caption" style={{ color: colors.brandDark }}>Sign in</T>

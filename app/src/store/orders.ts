@@ -34,10 +34,13 @@ const NEXT: Partial<Record<OrderState, OrderState>> = {
 // ---------------------------------------------------------------------------
 // Wire format: the public.orders table (the earlier web apps speak the same vocabulary).
 // Columns beyond his original ones come from web/supabase/001_onmyway_orders.sql.
-// Writes drop any column the live table doesn't have yet, so the app keeps working
-// (with less detail synced) until that file has been applied.
+// Writes drop any column the live table doesn't have yet. Until that file is applied
+// the same fields also travel as JSON in `delivery_otp` (a column nobody uses), so
+// both phones still see courier, fare, pickup OTP, PIN expiry, rating and reports.
+// Real columns win over the sidecar once they exist.
 // ---------------------------------------------------------------------------
 type Row = Record<string, any>;
+const SIDECAR = 'delivery_otp';
 
 const TO_STATUS: Record<OrderState, string> = {
   ORDER_PLACED: 'available',
@@ -78,38 +81,52 @@ const uuid = () =>
     return (c === 'x' ? r : (r & 3) | 8).toString(16);
   });
 
+function sidecarOf(o: Order): string {
+  return JSON.stringify({
+    rr: o.customerRegNo, cr: o.courierRegNo, cn: o.courierName, cu: o.courierUpi, fee: o.fare,
+    po: o.pickupOtp, px: o.otp?.expiresAt, up: o.updatedAt, rt: o.rating, rp: o.report,
+  });
+}
+
 function fromRow(r: Row): Order {
+  let x: Row = {};
+  try {
+    if (typeof r[SIDECAR] === 'string' && r[SIDECAR].startsWith('{')) x = JSON.parse(r[SIDECAR]);
+  } catch {}
   const pickup = fromPoint(r.pickup_point);
   const block: string = r.hostel_delivery_block ?? '';
   const size = fromSize(r.order_size);
   const distanceKm = estimateKm(pickup, block);
   const createdAt = Date.parse(r.created_at) || Date.now();
-  const updatedAt = r.updated_at ? Date.parse(r.updated_at) : createdAt;
+  const updatedAt = r.updated_at ? Date.parse(r.updated_at) : (x.up ?? createdAt);
+  const courierRegNo = r.rider_reg_no ?? x.cr ?? undefined;
+  const pinExpiry = r.pin_expires_at ? Date.parse(r.pin_expires_at) : (x.px ?? updatedAt + PIN_TTL);
+  const report = r.report_reason
+    ? { by: r.report_by === 'courier' ? 'courier' : 'customer', reason: r.report_reason, note: r.report_note ?? undefined, at: r.reported_at ? Date.parse(r.reported_at) : updatedAt }
+    : x.rp ?? undefined;
   return {
     id: r.id,
     trackingId: r.tracking_id ?? undefined,
     platform: platformOf(r.tracking_id),
-    customerRegNo: r.requester_reg_no ?? r.requester_phone ?? '',
+    customerRegNo: r.requester_reg_no ?? x.rr ?? r.requester_phone ?? '',
     customerName: r.recipient_name ?? undefined,
     customerPhone: r.requester_phone ?? undefined,
-    courierRegNo: r.rider_reg_no ?? undefined,
-    courierName: r.rider_name ?? undefined,
-    courierUpi: r.rider_upi ?? undefined,
+    courierRegNo,
+    courierName: r.rider_name ?? (courierRegNo ? x.cn : undefined) ?? undefined,
+    courierUpi: r.rider_upi ?? (courierRegNo ? x.cu : undefined) ?? undefined,
     size,
     pickup,
     dropoff: block ? (/block/i.test(block) ? block : `${block} block`) : 'Your block',
     distanceKm,
-    fare: r.delivery_fee ?? quoteFare(size, distanceKm),
+    fare: r.delivery_fee ?? x.fee ?? quoteFare(size, distanceKm),
     note: r.special_instructions || r.order_instructions || undefined,
-    pickupOtp: r.pickup_otp ?? undefined,
+    pickupOtp: r.pickup_otp ?? x.po ?? undefined,
     state: FROM_STATUS[r.delivery_status] ?? 'ORDER_PLACED',
     createdAt,
     updatedAt,
-    otp: r.delivery_pin ? { code: String(r.delivery_pin), expiresAt: r.pin_expires_at ? Date.parse(r.pin_expires_at) : updatedAt + PIN_TTL } : undefined,
-    rating: r.rating ?? undefined,
-    report: r.report_reason
-      ? { by: r.report_by === 'courier' ? 'courier' : 'customer', reason: r.report_reason, note: r.report_note ?? undefined, at: r.reported_at ? Date.parse(r.reported_at) : updatedAt }
-      : undefined,
+    otp: r.delivery_pin ? { code: String(r.delivery_pin), expiresAt: pinExpiry } : undefined,
+    rating: r.rating ?? x.rt ?? undefined,
+    report,
   };
 }
 
@@ -129,20 +146,13 @@ function toRow(o: Order): Row {
     delivery_fee: o.fare,
     pickup_otp: o.pickupOtp ?? null,
     updated_at: iso(o.updatedAt),
+    [SIDECAR]: sidecarOf(o),
   };
 }
 
-/** Until the SQL file is applied the live table lacks some columns; keep what this phone already knows. */
 function merge(prev: Order | undefined, next: Order): Order {
   if (!prev) return next;
-  const keepCourier = !next.courierRegNo && prev.courierRegNo && next.state !== 'ORDER_PLACED' && next.state !== 'CANCELLED';
-  return {
-    ...next,
-    ...(keepCourier ? { courierRegNo: prev.courierRegNo, courierName: prev.courierName, courierUpi: prev.courierUpi } : {}),
-    otp: next.otp && prev.otp?.code === next.otp.code ? prev.otp : next.otp,
-    rating: next.rating ?? prev.rating,
-    report: next.report ?? prev.report,
-  };
+  return { ...next, otp: next.otp && prev.otp?.code === next.otp.code ? prev.otp : next.otp };
 }
 
 const MISSING_COL = /Could not find the '(\w+)' column/;
@@ -212,7 +222,9 @@ function patch(orderId: string, local: Partial<Order>, remote: Row) {
     const o = s.orders[orderId];
     return o ? { orders: { ...s.orders, [orderId]: { ...o, ...local, updatedAt: now() } } } : {};
   });
-  tolerant((p) => supabase.from('orders').update(p).eq('id', orderId).select(), { ...remote, updated_at: iso() })
+  const o = useOrders.getState().orders[orderId];
+  if (!o) return;
+  tolerant((p) => supabase.from('orders').update(p).eq('id', orderId).select(), { ...remote, updated_at: iso(), [SIDECAR]: sidecarOf(o) })
     .then(({ data, error }) => (error || !data?.length ? sync() : applyRows(data)))
     .catch(sync);
 }
@@ -278,16 +290,17 @@ export const useOrders = create<OrdersState>()(
         const courierName = useAuth.getState().user?.name;
         seq++;
         // The conditional write: only succeeds if still unassigned.
+        const taken: Order = { ...o, courierRegNo, courierName, courierUpi, state: 'AGENT_ASSIGNED', updatedAt: now() };
         const { data, error } = await tolerant(
           (p) => supabase.from('orders').update(p).eq('id', orderId).eq('delivery_status', 'available').select(),
-          { delivery_status: 'allocated', rider_reg_no: courierRegNo, rider_name: courierName ?? null, rider_upi: courierUpi ?? null, updated_at: iso() },
+          { delivery_status: 'allocated', rider_reg_no: courierRegNo, rider_name: courierName ?? null, rider_upi: courierUpi ?? null, updated_at: iso(), [SIDECAR]: sidecarOf(taken) },
         );
         if (error) return 'offline';
         if (!data?.length) {
           sync();
           return 'taken';
         }
-        set((s) => ({ orders: { ...s.orders, [orderId]: { ...s.orders[orderId], courierRegNo, courierName, courierUpi, state: 'AGENT_ASSIGNED', updatedAt: now() } } }));
+        set((s) => ({ orders: { ...s.orders, [orderId]: taken } }));
         applyRows(data);
         return 'ok';
       },
@@ -311,7 +324,7 @@ export const useOrders = create<OrdersState>()(
         // Verified by the database: the row only changes if the PIN on it matches.
         const { data, error } = await tolerant(
           (p) => supabase.from('orders').update(p).eq('id', orderId).eq('delivery_status', 'reached').eq('delivery_pin', code).select(),
-          { delivery_status: 'handed_over', updated_at: iso() },
+          { delivery_status: 'handed_over', updated_at: iso(), [SIDECAR]: sidecarOf({ ...o, updatedAt: now() }) },
         );
         if (error || !data?.length) {
           sync();

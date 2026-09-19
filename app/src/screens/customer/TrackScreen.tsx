@@ -60,11 +60,11 @@ export function TrackScreen({ navigation, route }: Props) {
         <View style={s.row}>
           <View style={s.avatar}>
             <T kind="subtitle" style={{ color: colors.onBrand }}>
-              {(order.courierRegNo ?? '?').slice(-2)}
+              {order.courierName ? order.courierName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase() : (order.courierRegNo ?? '?').slice(-2)}
             </T>
           </View>
           <View style={{ flex: 1 }}>
-            <T kind="subtitle">Courier {order.courierRegNo}</T>
+            <T kind="subtitle">{order.courierName ?? `Courier ${order.courierRegNo ?? ''}`}</T>
             <T kind="caption">
               {order.pickup} → {order.dropoff} · ₹{order.fare}
             </T>

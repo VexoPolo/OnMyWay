@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -46,21 +46,12 @@ export function CourierJobScreen({ navigation, route }: Props) {
   const [reporting, setReporting] = useState(false);
 
   const [point, setPoint] = useState<(typeof POINTS)[number]>(fromHub === 'Amazon Pick Up Point' ? 'Amazon Pick Up Point' : 'Main Gate');
-  const [otpStage, setOtpStage] = useState<'idle' | 'requested' | 'received'>('idle');
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState<string>();
-
-  // The orderer "shares" the platform OTP a beat after it's requested.
-  useEffect(() => {
-    if (otpStage !== 'requested') return;
-    const t = setTimeout(() => setOtpStage('received'), 2000);
-    return () => clearTimeout(t);
-  }, [otpStage]);
 
   if (!order) return null;
   const mine = order.courierRegNo === me.regNo;
   const first = order.customerName?.split(' ')[0] ?? 'the customer';
-  const pickupCode = order.pickupOtp ?? String(orderId.replace(/\D/g, '') || '58194').padEnd(5, '4').slice(0, 5);
 
   const onAccept = async () => {
     const r = await accept(orderId, me.regNo, me.upi);
@@ -138,33 +129,19 @@ export function CourierJobScreen({ navigation, route }: Props) {
 
       {order.state === 'AGENT_ASSIGNED' && mine && (
         <>
-          <T kind="eyebrow">OTP</T>
-          <View style={[s.otpBox, otpStage === 'received' && s.otpBoxOn]}>
+          <T kind="eyebrow">Collection OTP</T>
+          <View style={[s.otpBox, !!order.pickupOtp && s.otpBoxOn]}>
             <T style={{ fontSize: 13.5, fontFamily: fonts.bodyMedium }}>
-              {otpStage === 'idle' ? 'Not requested yet' : otpStage === 'requested' ? 'Request sent' : `OTP from ${first}`}
+              {order.pickupOtp ? `OTP from ${first}` : 'No OTP for this one'}
             </T>
-            {otpStage === 'received' && <T style={s.otpCode}>{pickupCode}</T>}
+            {!!order.pickupOtp && <T style={s.otpCode}>{order.pickupOtp}</T>}
             <T kind="caption" style={{ fontSize: 11.5, lineHeight: 16, textAlign: 'center' }}>
-              {otpStage === 'idle'
-                ? 'The person who placed the order gets a push notification and shares the OTP with you here.'
-                : otpStage === 'requested'
-                  ? `Waiting for ${first} to share the OTP…`
-                  : 'Read this out to the driver.'}
+              {order.pickupOtp
+                ? `${first} typed this in from ${order.platform ?? 'the platform'}. Read it out to the driver.`
+                : `${first} didn't enter one — the driver hands it over on the name and tracking ID.`}
             </T>
           </View>
-          {otpStage === 'received' ? (
-            <Button title="I have the parcel" onPress={() => advance(orderId)} />
-          ) : (
-            <Button
-              title={otpStage === 'idle' ? `Request OTP from ${first}` : `Requested · waiting for ${first}`}
-              variant={otpStage === 'idle' ? 'primary' : 'ghost'}
-              onPress={() => setOtpStage('requested')}
-              disabled={otpStage === 'requested'}
-            />
-          )}
-          <T kind="caption" style={{ textAlign: 'center' }}>
-            Show the OTP to the driver to collect the parcel
-          </T>
+          <Button title="I have the parcel" onPress={() => advance(orderId)} />
         </>
       )}
 

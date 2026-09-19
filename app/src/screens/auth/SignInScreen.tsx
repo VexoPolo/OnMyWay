@@ -15,6 +15,7 @@ type Props = NativeStackScreenProps<AuthStackParams, 'SignIn'>;
 
 export function SignInScreen({ navigation }: Props) {
   const signIn = useAuth((s) => s.signIn);
+  const complete = useAuth((s) => s.complete);
   const [regNo, setRegNo] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string>();
@@ -27,7 +28,7 @@ export function SignInScreen({ navigation }: Props) {
     setBusy(false);
     if (!res.ok) return setError(res.error);
     signIn(regNo);
-    navigation.navigate('Otp');
+    complete('Student ' + regNo.trim().slice(-4)); // real name is pulled from the users table
   };
 
   return (

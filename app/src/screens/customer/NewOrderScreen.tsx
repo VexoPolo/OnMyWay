@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Switch, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Field } from '../../components/Field';
@@ -27,14 +27,13 @@ export function NewOrderScreen({ navigation }: Props) {
   const [size, setSize] = useState<PackageSize>('M');
   const [pickup, setPickup] = useState<PickupPoint>('Main Gate');
   const [trackingId, setTrackingId] = useState('');
-  const [needsOtp, setNeedsOtp] = useState(false);
   const [pickupOtp, setPickupOtp] = useState('');
 
   const dropoff = user.block ? `${user.block} block` : 'Your block';
   const km = estimateKm(pickup, user.block ?? '');
   const fare = quoteFare(size, km);
   const tid = trackingId.trim().toUpperCase();
-  const ready = tid.length >= 6 && (!needsOtp || pickupOtp.length >= 4);
+  const ready = tid.length >= 6 && (pickupOtp.length === 0 || pickupOtp.length >= 4);
 
   const submit = () => {
     const order = place({
@@ -47,7 +46,7 @@ export function NewOrderScreen({ navigation }: Props) {
       trackingId: tid,
       customerPhone: user.phone,
       platform: platformOf(tid),
-      pickupOtp: needsOtp ? pickupOtp : undefined,
+      pickupOtp: pickupOtp || undefined,
     });
     navigation.replace('Searching', { orderId: order.id });
   };
@@ -89,31 +88,20 @@ export function NewOrderScreen({ navigation }: Props) {
         </T>
       </View>
 
-      <Card style={s.toggleRow}>
-        <View style={{ flex: 1, gap: 3 }}>
-          <T style={{ fontSize: 13.5, fontFamily: fonts.bodyMedium }}>Needs an OTP to collect?</T>
-          <T kind="caption" style={{ fontSize: 11.5, lineHeight: 16 }}>
-            Turn this on if the platform gives a pickup code
-          </T>
-        </View>
-        <Switch value={needsOtp} onValueChange={setNeedsOtp} trackColor={{ false: colors.line, true: colors.brandB }} thumbColor="#FFFFFF" />
-      </Card>
-      {needsOtp && (
-        <View>
-          <Field
-            label="Enter OTP"
-            placeholder="· · · · · ·"
-            keyboardType="number-pad"
-            maxLength={6}
-            value={pickupOtp}
-            onChangeText={(t) => setPickupOtp(t.replace(/\D/g, ''))}
-            style={{ textAlign: 'center', fontFamily: fonts.mono, letterSpacing: 6, fontSize: 17 }}
-          />
-          <T kind="caption" style={{ fontSize: 11, marginTop: 6 }}>
-            You'll get this from the delivery platform — pass it on to your courier
-          </T>
-        </View>
-      )}
+      <View>
+        <Field
+          label="Collection OTP (if the platform gave you one)"
+          placeholder="· · · · · ·"
+          keyboardType="number-pad"
+          maxLength={6}
+          value={pickupOtp}
+          onChangeText={(t) => setPickupOtp(t.replace(/\D/g, ''))}
+          style={{ textAlign: 'center', fontFamily: fonts.mono, letterSpacing: 6, fontSize: 17 }}
+        />
+        <T kind="caption" style={{ fontSize: 11, marginTop: 6 }}>
+          Amazon / Flipkart text this to you — your courier shows it to the driver. Leave blank if there isn't one.
+        </T>
+      </View>
 
       <View style={s.bottom}>
         <Button title={`Confirm order · ₹${fare}`} onPress={submit} disabled={!ready} />
@@ -150,6 +138,5 @@ const s = StyleSheet.create({
   segBtn: { flex: 1, paddingVertical: 9, borderRadius: 8, alignItems: 'center' },
   segOn: { backgroundColor: colors.brandB },
   segText: { fontSize: 12.5, fontFamily: fonts.bodyMedium, color: colors.muted },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, paddingHorizontal: 16 },
   bottom: { gap: space.sm, marginTop: space.md },
 });
