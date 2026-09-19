@@ -12,7 +12,7 @@ export function OrderCard({ order, onPress, taken }: { order: Order; onPress?: (
       <Card style={[taken && s.taken, order.state === 'DISPUTED' && { borderColor: 'rgba(239,68,68,0.35)' }]}>
         <View style={s.row}>
           <T kind="mono" style={{ color: colors.muted }}>
-            {order.trackingId ?? order.id.slice(0, 8).toUpperCase()}
+            {order.trackingId ?? `Parcel for ${order.customerName?.split(' ')[0] ?? order.customerRegNo}`}
           </T>
           <T kind="state" style={order.state === 'DISPUTED' && { color: colors.error }}>{taken ? 'TAKEN' : order.state}</T>
         </View>

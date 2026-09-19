@@ -265,6 +265,8 @@ export const useOrders = create<OrdersState>()(
       place: (draft) => {
         const order: Order = {
           ...draft,
+          // tracking_id is NOT NULL in the table; a gate pickup without a platform ID gets an OMW reference instead
+          trackingId: draft.trackingId ?? 'OMW-' + Math.floor(100000 + Math.random() * 900000),
           id: uuid(),
           fare: quoteFare(draft.size, draft.distanceKm),
           state: 'ORDER_PLACED',

@@ -158,7 +158,7 @@ function CourierHome() {
               <View key={o.id} style={[s.item, isOpen && s.itemOpen]}>
                 <Pressable onPress={() => setOpenId(isOpen ? null : o.id)} style={s.itemHead}>
                   <View style={{ gap: 3, flex: 1 }}>
-                    <T kind="mono" style={{ fontSize: 12.5, fontFamily: fonts.monoMedium }}>{o.trackingId ?? o.id}</T>
+                    <T kind="mono" style={{ fontSize: 12.5, fontFamily: fonts.monoMedium }}>{o.trackingId ?? `Parcel for ${o.customerName?.split(' ')[0] ?? o.customerRegNo}`}</T>
                     <T kind="caption" style={{ fontSize: 11.5 }}>→ {o.dropoff}</T>
                   </View>
                   <View style={[s.tag, large && s.tagLarge]}>

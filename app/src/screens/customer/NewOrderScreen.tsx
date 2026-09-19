@@ -34,7 +34,9 @@ export function NewOrderScreen({ navigation }: Props) {
   const km = estimateKm(pickup, user.block ?? '');
   const fare = quoteFare(size, km);
   const tid = trackingId.trim().toUpperCase();
-  const ready = tid.length >= 6 && (pickupOtp.length === 0 || pickupOtp.length >= 4);
+  // Amazon's kiosk hands parcels over by tracking ID; at the gate the courier goes by name and block.
+  const needsTid = pickup === 'Amazon Pick Up Point';
+  const ready = (needsTid ? tid.length >= 6 : tid.length === 0 || tid.length >= 6) && (pickupOtp.length === 0 || pickupOtp.length >= 4);
 
   const submit = () => {
     const order = place({
@@ -44,7 +46,7 @@ export function NewOrderScreen({ navigation }: Props) {
       pickup,
       dropoff,
       distanceKm: km,
-      trackingId: tid,
+      trackingId: tid || undefined,
       customerPhone: user.phone,
       platform: platformOf(tid),
       pickupOtp: pickupOtp || undefined,
@@ -84,9 +86,9 @@ export function NewOrderScreen({ navigation }: Props) {
       </T>
 
       <View>
-        <Field label="Tracking ID" placeholder="e.g. TBA3049182765" autoCapitalize="characters" autoCorrect={false} value={trackingId} onChangeText={setTrackingId} />
+        <Field label={needsTid ? 'Tracking ID' : 'Tracking ID (optional)'} placeholder="e.g. TBA3049182765" autoCapitalize="characters" autoCorrect={false} value={trackingId} onChangeText={setTrackingId} />
         <T kind="caption" style={{ fontSize: 11, marginTop: 6 }}>
-          From the courier app or order confirmation SMS
+          {needsTid ? 'From the Amazon app or order confirmation SMS' : 'From the courier app or SMS — skip it if the parcel is just waiting at the gate under your name'}
         </T>
       </View>
 
