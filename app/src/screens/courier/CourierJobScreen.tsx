@@ -4,6 +4,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { OtpInput } from '../../components/OtpInput';
+import { ReportSheet } from '../../components/ReportSheet';
+import { SlideToComplete } from '../../components/SlideToComplete';
 import { Screen } from '../../components/Screen';
 import { T } from '../../components/Text';
 import { Timeline } from '../../components/Timeline';
@@ -26,7 +28,9 @@ const CHIP: Record<string, string> = {
   PICKED_UP: 'Parcel collected',
   OUT_FOR_DELIVERY: 'On the way',
   ARRIVED: 'At the door',
+  CONFIRMATION_RECEIVED: 'Handover verified',
   DELIVERED: 'Delivered',
+  DISPUTED: 'Disputed',
 };
 
 /** Frame 4 — Delivery Agent · Pickup. Where are you, order details, request the platform OTP. */
@@ -38,6 +42,8 @@ export function CourierJobScreen({ navigation, route }: Props) {
   const advance = useOrders((s) => s.advance);
   const arrive = useOrders((s) => s.arrive);
   const confirm = useOrders((s) => s.confirmHandover);
+  const report = useOrders((s) => s.report);
+  const [reporting, setReporting] = useState(false);
 
   const [point, setPoint] = useState<(typeof POINTS)[number]>(fromHub === 'Amazon Pick Up Point' ? 'Amazon Pick Up Point' : 'Main Gate');
   const [otpStage, setOtpStage] = useState<'idle' | 'requested' | 'received'>('idle');
@@ -53,11 +59,11 @@ export function CourierJobScreen({ navigation, route }: Props) {
 
   if (!order) return null;
   const mine = order.courierRegNo === me.regNo;
-  const first = (order.customerName ?? 'the orderer').split(' ')[0];
+  const first = order.customerName?.split(' ')[0] ?? 'the customer';
   const pickupCode = order.pickupOtp ?? String(orderId.replace(/\D/g, '') || '58194').padEnd(5, '4').slice(0, 5);
 
   const onAccept = () => {
-    const r = accept(orderId, me.regNo);
+    const r = accept(orderId, me.regNo, me.upi);
     if (r === 'taken') setMsg('Someone else got there first. This job is taken.');
   };
   const onVerify = () => {
@@ -170,7 +176,52 @@ export function CourierJobScreen({ navigation, route }: Props) {
           <Button title="Verify handover" onPress={onVerify} disabled={code.length < 6} />
         </View>
       )}
-      {order.state === 'DELIVERED' && <Button title="Done" onPress={() => navigation.popToTop()} />}
+      {order.state === 'CONFIRMATION_RECEIVED' && mine && (
+        <View style={{ gap: space.md, alignItems: 'center', paddingTop: space.sm }}>
+          <T kind="eyebrow">Collect from {first}</T>
+          <T style={s.amount}>₹{order.fare}</T>
+          <T kind="caption" style={{ textAlign: 'center', maxWidth: 260 }}>
+            Cash, or to your own UPI{me.upi ? ` (${me.upi})` : ''}. Nothing goes through the app.
+          </T>
+          <View style={{ alignSelf: 'stretch', gap: 8 }}>
+            <SlideToComplete onComplete={() => advance(orderId)} />
+            <T kind="caption" style={{ textAlign: 'center' }}>
+              Completes the order once you've been paid
+            </T>
+          </View>
+        </View>
+      )}
+      {order.state === 'DELIVERED' && (
+        <>
+          <Card style={{ gap: 4, alignItems: 'center', paddingVertical: 20 }}>
+            <T kind="eyebrow">Collected</T>
+            <T style={s.amount}>₹{order.fare}</T>
+            <T kind="state">DELIVERED · order closed</T>
+          </Card>
+          <Button title="Done" onPress={() => navigation.popToTop()} />
+        </>
+      )}
+      {mine && order.state !== 'DELIVERED' && order.state !== 'DISPUTED' && (
+        <Pressable onPress={() => setReporting(true)}>
+          <T kind="mono" style={s.link}>
+            Can't complete this?
+          </T>
+        </Pressable>
+      )}
+      <ReportSheet
+        open={reporting}
+        title="Can't complete this?"
+        intro="You won't be penalised for reporting honestly. The requester is told straight away and the order goes back to available for another courier."
+        reasons={["Parcel isn't at the pickup point", "Wrong OTP · can't collect", 'Customer not answering']}
+        submitLabel="Report and release this order"
+        footnote="Your reg number and the timeline go to the campus admin"
+        onSubmit={(reason, note) => {
+          report(orderId, 'courier', reason, note);
+          setReporting(false);
+          navigation.popToTop();
+        }}
+        onClose={() => setReporting(false)}
+      />
 
       {mine && !pickupPhase && (
         <Card>
@@ -233,4 +284,6 @@ const s = StyleSheet.create({
   otpBox: { backgroundColor: colors.surface, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.line, borderRadius: radius.card, padding: 16, alignItems: 'center', gap: 4 },
   otpBoxOn: { borderStyle: 'solid', borderColor: 'rgba(252,211,77,0.3)' },
   otpCode: { fontFamily: fonts.monoMedium, fontSize: 26, letterSpacing: 5, color: colors.brandDark, marginVertical: 6 },
+  amount: { fontFamily: fonts.displayBlack, fontSize: 52, lineHeight: 56, letterSpacing: -2, color: colors.brandDark },
+  link: { fontSize: 11, color: colors.muted, textAlign: 'center', textDecorationLine: 'underline', marginTop: space.sm },
 });

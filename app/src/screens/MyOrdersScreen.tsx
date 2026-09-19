@@ -17,6 +17,9 @@ export function MyOrdersScreen() {
   const list = Object.values(orders)
     .filter((o) => o.customerRegNo === user.regNo || o.courierRegNo === user.regNo)
     .sort((a, b) => b.createdAt - a.createdAt);
+  const doneStates = new Set(['DELIVERED', 'CANCELLED']);
+  const active = list.filter((o) => !doneStates.has(o.state));
+  const done = list.filter((o) => doneStates.has(o.state));
 
   return (
     <Screen scroll>
@@ -24,8 +27,24 @@ export function MyOrdersScreen() {
         My orders
       </T>
       {list.length === 0 && <T kind="caption">No orders yet.</T>}
+      {active.length > 0 && <T kind="eyebrow">Active</T>}
       <View style={s.list}>
-        {list.map((o) => {
+        {active.map((o) => {
+          const asCourier = o.courierRegNo === user.regNo;
+          return (
+            <OrderCard
+              key={o.id}
+              order={o}
+              onPress={() =>
+                asCourier ? nav.navigate('CourierJob', { orderId: o.id }) : nav.navigate(routeFor(o.state), { orderId: o.id })
+              }
+            />
+          );
+        })}
+      </View>
+      {done.length > 0 && <T kind="eyebrow" style={{ marginTop: 8 }}>Done</T>}
+      <View style={[s.list, { opacity: 0.7 }]}>
+        {done.map((o) => {
           const asCourier = o.courierRegNo === user.regNo;
           return (
             <OrderCard

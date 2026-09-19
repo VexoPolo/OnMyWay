@@ -13,6 +13,7 @@ interface AuthState {
   verifyOtp: (token: string, name: string) => void;
   setRole: (role: Role) => void;
   setOnline: (online: boolean) => void;
+  setUpi: (upi: string) => void;
   signOut: () => void;
 }
 
@@ -34,6 +35,7 @@ export const useAuth = create<AuthState>()(
         })),
       setRole: (role) => set((s) => (s.user ? { user: { ...s.user, role } } : {})),
       setOnline: (online) => set((s) => (s.user ? { user: { ...s.user, online } } : {})),
+      setUpi: (upi) => set((s) => (s.user ? { user: { ...s.user, upi: upi.trim() || undefined } } : {})),
       signOut: () => set({ user: null, token: null, pendingRegNo: null, pendingProfile: null }),
     }),
     { name: 'onmyway.auth', storage: createJSONStorage(() => AsyncStorage) },

@@ -168,6 +168,32 @@ h2.group b{color:var(--ink);font-weight:500}
 .pill{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--brand-dark)}
 .pill i{width:8px;height:8px;border-radius:4px;background:var(--brand-dark);display:block}
 .grow{display:flex;flex-direction:column;justify-content:center;align-items:center;flex:1;gap:14px}
+/* settlement + safety */
+.amount{font-family:Archivo,sans-serif;font-weight:900;font-size:56px;letter-spacing:-.03em;line-height:1;color:var(--brand-dark)}
+.slider{position:relative;height:60px;border-radius:30px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.slider .thumb{position:absolute;left:4px;top:4px;width:52px;height:52px;border-radius:26px;background:linear-gradient(135deg,var(--brand-a),var(--brand-b));display:flex;align-items:center;justify-content:center;color:var(--on-brand);font-size:20px;font-weight:700;box-shadow:0 4px 12px rgba(245,158,11,.35)}
+.slider .lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);padding-left:44px}
+.slider.done{background:linear-gradient(135deg,var(--brand-a),var(--brand-b));border-color:transparent}
+.slider.done .thumb{left:auto;right:4px;background:var(--ground);color:var(--brand-dark)}
+.slider.done .lbl{color:var(--on-brand);padding-left:0;padding-right:44px}
+.upi{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--ground);border:1px dashed var(--line);border-radius:12px;padding:12px 14px}
+.upi .id{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:500}
+.upi .copy{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--brand-dark);border:1px solid rgba(252,211,77,.3);border-radius:6px;padding:4px 8px}
+.stars{display:flex;gap:8px;justify-content:center}
+.stars span{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--line)}
+.stars span.on{background:linear-gradient(135deg,var(--brand-a),var(--brand-b));color:var(--on-brand);border-color:transparent}
+.banner{display:flex;gap:10px;align-items:center;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.35);border-radius:12px;padding:11px 12px}
+.banner i{width:8px;height:8px;border-radius:4px;background:var(--brand-b);display:block;flex-shrink:0}
+.banner .t{font-size:13px;font-weight:500}.banner .s{font-size:11.5px;color:var(--muted)}
+.banner a{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--brand-dark);white-space:nowrap}
+.reason{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;border:1px solid var(--line);background:var(--ground);font-size:14px;font-weight:500}
+.reason .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);font-weight:400}
+.reason.sel{border-color:var(--brand-b);background:rgba(252,211,77,.07)}
+.reason.sel .k{color:var(--brand-dark)}
+.chip.red{color:var(--error);background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3)}
+.link{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-align:center;text-decoration:underline;text-underline-offset:3px}
+.textarea{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--muted);min-height:70px}
+
 </style>
 </head>
 <body>
@@ -471,6 +497,121 @@ h2.group b{color:var(--ink);font-weight:500}
 </div>
 
 <!-- ============ PROFILE ============ -->
+
+<!-- ============ SETTLEMENT & SAFETY ============ -->
+<h2 class="group">05 · <b>Settlement & safety</b> — after the handover</h2>
+<div class="frames-row">
+
+<div class="frame-col"><div class="frame-title">Courier · <b>Collect · slide to complete</b></div>
+<div class="device"><div class="viewport"><div class="island"></div><div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
+  <div class="screen">
+    <div class="topbar"><div class="back">‹</div><span class="chip">Handover verified</span></div>
+    <div class="grow" style="gap:10px">
+      <div class="eyebrow">Collect from Meera</div>
+      <div class="amount">₹55</div>
+      <p class="caption center" style="max-width:250px">Cash, or to your own UPI. Nothing goes through the app.</p>
+    </div>
+    <div class="card rows"><div class="row"><span class="k">Your UPI</span><span class="v mono">meera.iyer@okaxis</span></div><div class="row"><span class="k">Order</span><span class="v mono">TBA5567123890</span></div></div>
+    <div class="slider"><div class="thumb">›</div><span class="lbl">Slide to complete</span></div>
+    <div class="caption center">Completes the order once you've been paid</div>
+  </div><div class="home-indicator"></div>
+</div></div></div>
+
+<div class="frame-col"><div class="frame-title">Courier · <b>Completed</b></div>
+<div class="device"><div class="viewport"><div class="island"></div><div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
+  <div class="screen">
+    <div class="grow"><div class="check">✓</div><div class="h1 upper center">Completed</div><p class="caption center">₹55 collected · 9 min door to door</p><span class="state">DELIVERED · order closed</span></div>
+    <div class="slider done"><div class="thumb">✓</div><span class="lbl">Completed</span></div>
+    <div class="card rows"><div class="row"><span class="k">Earned today</span><span class="v" style="color:var(--brand-dark)">₹135</span></div><div class="row"><span class="k">This week</span><span class="v">₹245 · 5 deliveries</span></div></div>
+    <div class="btn">Done</div>
+  </div><div class="home-indicator"></div>
+</div></div></div>
+
+<div class="frame-col"><div class="frame-title">Customer · <b>Pay the courier</b></div>
+<div class="device"><div class="viewport"><div class="island"></div><div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
+  <div class="screen">
+    <div class="grow" style="gap:10px;flex:0;padding-top:20px"><div class="check">✓</div><div class="h1 upper center">Delivered</div><span class="state">Pay your courier</span></div>
+    <div class="card" style="align-items:center;gap:6px;padding-top:22px">
+      <div class="eyebrow">Pay Meera</div>
+      <div class="amount">₹55</div>
+      <div class="caption">cash, or UPI</div>
+      <div class="upi" style="width:100%;margin-top:8px"><span class="id">meera.iyer@okaxis</span><span class="copy">COPY</span></div>
+    </div>
+    <div class="eyebrow center" style="margin-top:6px">How was Meera?</div>
+    <div class="stars"><span class="on">★</span><span class="on">★</span><span class="on">★</span><span class="on">★</span><span>★</span></div>
+    <div class="spacer"></div>
+    <div class="btn">Done</div>
+    <div class="link">Something wrong with this delivery?</div>
+  </div><div class="home-indicator"></div>
+</div></div></div>
+
+<div class="frame-col"><div class="frame-title">Customer · <b>Track · running late</b></div>
+<div class="device"><div class="viewport"><div class="island"></div><div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
+  <div class="map"><div class="g"></div><div class="path"></div><div class="pin" style="left:23%;top:37%;background:var(--pin-a)"></div><div class="pin" style="left:68%;top:59%;background:var(--pin-b)"></div><div class="puck" style="left:48%;top:48%"></div></div>
+  <div class="eta" style="background:var(--surface);color:var(--brand-dark);border:1px solid rgba(252,211,77,.3)">47 min · no update</div>
+  <div class="sheet2">
+    <div class="handle"></div>
+    <div class="banner"><i></i><div><div class="t">Taking longer than usual</div><div class="s">Picked up 47 min ago, no movement since</div></div><a>REPORT ›</a></div>
+    <div style="display:flex;align-items:center;gap:14px"><div class="avatar">17</div><div style="flex:1"><div style="font-weight:600;font-size:16px">Meera Iyer · LH-C</div><div class="caption">24BCE0417 · ★ 4.8 · 12 deliveries</div></div><span class="state">PICKED_UP</span></div>
+    <div class="btn ghost">Back to home</div>
+    <div class="link">Something wrong?</div>
+  </div><div class="home-indicator"></div>
+</div></div></div>
+
+<div class="frame-col"><div class="frame-title">Customer · <b>Report a problem</b></div>
+<div class="device"><div class="viewport"><div class="island"></div><div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
+  <div class="map"><div class="g"></div><div class="path"></div></div>
+  <div class="backdrop"></div>
+  <div class="sheet" style="height:78%">
+    <div class="handle"></div>
+    <div class="topbar"><h3>Something wrong?</h3><div class="x">✕</div></div>
+    <p class="caption">Order TBA5567123890 · courier 24BCE0417. Both reg numbers go to the campus admin with the full timeline.</p>
+    <div class="reason"><span>Courier is late</span><span class="k">47 MIN</span></div>
+    <div class="reason"><span>Courier isn't responding</span><span class="k"></span></div>
+    <div class="reason sel"><span>Parcel not received</span><span class="k">SELECTED</span></div>
+    <div class="textarea">Said they'd be here at 6, no reply since…</div>
+    <div class="spacer"></div>
+    <div class="btn danger">Report and flag this order</div>
+    <div class="caption center">The order is marked DISPUTED on both phones</div>
+  </div><div class="home-indicator"></div>
+</div></div></div>
+
+<div class="frame-col"><div class="frame-title">Courier · <b>Report a problem</b></div>
+<div class="device"><div class="viewport"><div class="island"></div><div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
+  <div class="screen" style="gap:12px">
+    <div class="topbar"><div class="back">‹</div><span class="chip">Order accepted</span></div>
+    <div class="h1">Pick up the parcel</div>
+    <div class="card rows" style="font-size:13px"><div class="row"><span class="k">Tracker ID</span><span class="v mono">TBA5567123890</span></div><div class="row"><span class="k">Ordered by</span><span class="v">Meera Iyer</span></div></div>
+  </div>
+  <div class="backdrop"></div>
+  <div class="sheet" style="height:66%">
+    <div class="handle"></div>
+    <div class="topbar"><h3>Can't complete this?</h3><div class="x">✕</div></div>
+    <p class="caption">You won't be penalised for reporting honestly. The requester is told straight away.</p>
+    <div class="reason sel"><span>Parcel isn't at the pickup point</span><span class="k">SELECTED</span></div>
+    <div class="reason"><span>Wrong OTP · can't collect</span><span class="k"></span></div>
+    <div class="reason"><span>Customer not answering</span><span class="k"></span></div>
+    <div class="spacer"></div>
+    <div class="btn danger">Report and release this order</div>
+    <div class="caption center">Order goes back to available for another courier</div>
+  </div><div class="home-indicator"></div>
+</div></div></div>
+
+<div class="frame-col"><div class="frame-title">Both · <b>My Orders · disputed</b></div>
+<div class="device"><div class="viewport"><div class="island"></div><div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
+  <div class="screen tabs">
+    <div class="h1 upper" style="margin-top:8px">My orders</div>
+    <div class="eyebrow">Active</div>
+    <div class="order-card" style="border-color:rgba(239,68,68,.35)"><div class="top"><span class="mono caption">TBA5567123890</span><span class="chip red">DISPUTED</span></div><div class="route"><div class="stop"><i style="background:var(--pin-a)"></i>Amazon Pick Up Point</div><div class="leg"></div><div class="stop"><i style="background:var(--pin-b)"></i>LH-C block</div></div><div class="top"><span class="caption">Parcel not received · reported 6:42 pm</span><span class="fare">₹55</span></div></div>
+    <div class="eyebrow" style="margin-top:6px">Done</div>
+    <div class="order-card" style="opacity:.6"><div class="top"><span class="mono caption">TBA3049182765</span><span class="state">DELIVERED</span></div><div class="route"><div class="stop"><i style="background:var(--pin-a)"></i>Main Gate</div><div class="leg"></div><div class="stop"><i style="background:var(--pin-b)"></i>MH-F block</div></div><div class="top"><span class="caption">Yesterday · ★ 5</span><span class="fare">₹40</span></div></div>
+  </div>
+  <div class="tabbar"><div class="tab"><i>H</i>Home</div><div class="tab on"><i>O</i>My Orders</div><div class="tab"><i>P</i>Profile</div></div>
+  <div class="home-indicator"></div>
+</div></div></div>
+
+</div>
+
 <h2 class="group">04 · <b>Profile</b></h2>
 <div class="frames-row">
 

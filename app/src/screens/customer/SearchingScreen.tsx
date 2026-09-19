@@ -25,7 +25,7 @@ export function SearchingScreen({ navigation, route }: Props) {
   useEffect(() => {
     // Deliberately not cancelled on unmount: the customer may leave this screen
     // while the broadcast is still out. accept() is a no-op if someone real took it.
-    api.findCourier().then(() => accept(orderId, MOCK_COURIER));
+    api.findCourier().then(() => accept(orderId, MOCK_COURIER, 'aarav@okaxis'));
   }, [orderId, accept]);
 
   useEffect(() => {

@@ -16,7 +16,7 @@ import { useAuth } from '../store/auth';
 import { useOrders } from '../store/orders';
 import { brandGradient, colors, fonts, space } from '../theme';
 
-const ACTIVE = new Set(['ORDER_PLACED', 'AGENT_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'ARRIVED']);
+const ACTIVE = new Set(['ORDER_PLACED', 'AGENT_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'ARRIVED', 'CONFIRMATION_RECEIVED', 'DISPUTED']);
 
 export function HomeScreen() {
   const user = useAuth((s) => s.user)!;
@@ -89,7 +89,7 @@ function CourierHome() {
   };
   const start = (o: Order) => {
     if (o.state === 'ORDER_PLACED') {
-      const r = accept(o.id, user.regNo);
+      const r = accept(o.id, user.regNo, user.upi);
       if (r === 'taken') return setNudge('Someone else got there first.');
     }
     nav.navigate('CourierJob', { orderId: o.id, point: loc ?? undefined });
@@ -230,7 +230,9 @@ export function routeFor(state: string): 'Searching' | 'Track' | 'Handover' | 'D
       return 'Searching';
     case 'ARRIVED':
       return 'Handover';
+    case 'CONFIRMATION_RECEIVED':
     case 'DELIVERED':
+    case 'DISPUTED':
       return 'Delivered';
     default:
       return 'Track';

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OnMyWay - Verify - Six digits</title>
+<title>OnMyWay - Both - My Orders - disputed</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -202,14 +202,15 @@ html,body{margin:0;padding:0;background:#0A0A0A}body{display:block;min-height:0;
 </head>
 <body>
 <div class="viewport"><div class="island"></div><div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
-  <div class="screen">
-    <div style="display:flex;justify-content:center;padding:32px 0"><div class="mark" style="height:30px"></div></div>
-    <div class="h1 upper">Six digits</div>
-    <p class="sub">Sent to the number on file for <span class="mono" style="color:var(--ink)">24BCE0417</span>.</p>
-    <div class="otp" style="margin-top:8px"><span class="f">1</span><span class="f">2</span><span class="f">3</span><span class="a"></span><span></span><span></span></div>
-    <div class="btn disabled">Verify</div>
-    <div class="btn ghost">Back</div>
-  </div><div class="home-indicator"></div>
+  <div class="screen tabs">
+    <div class="h1 upper" style="margin-top:8px">My orders</div>
+    <div class="eyebrow">Active</div>
+    <div class="order-card" style="border-color:rgba(239,68,68,.35)"><div class="top"><span class="mono caption">TBA5567123890</span><span class="chip red">DISPUTED</span></div><div class="route"><div class="stop"><i style="background:var(--pin-a)"></i>Amazon Pick Up Point</div><div class="leg"></div><div class="stop"><i style="background:var(--pin-b)"></i>LH-C block</div></div><div class="top"><span class="caption">Parcel not received · reported 6:42 pm</span><span class="fare">₹55</span></div></div>
+    <div class="eyebrow" style="margin-top:6px">Done</div>
+    <div class="order-card" style="opacity:.6"><div class="top"><span class="mono caption">TBA3049182765</span><span class="state">DELIVERED</span></div><div class="route"><div class="stop"><i style="background:var(--pin-a)"></i>Main Gate</div><div class="leg"></div><div class="stop"><i style="background:var(--pin-b)"></i>MH-F block</div></div><div class="top"><span class="caption">Yesterday · ★ 5</span><span class="fare">₹40</span></div></div>
+  </div>
+  <div class="tabbar"><div class="tab"><i>H</i>Home</div><div class="tab on"><i>O</i>My Orders</div><div class="tab"><i>P</i>Profile</div></div>
+  <div class="home-indicator"></div>
 </div>
 </body>
 </html>

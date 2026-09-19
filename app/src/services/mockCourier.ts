@@ -31,6 +31,9 @@ export function useMockCourier(orderId: string) {
         // The customer reads the code out; the mock courier "types" it after a beat.
         t = setTimeout(() => order.otp && confirm(orderId, order.otp.code), 6000);
         break;
+      case 'CONFIRMATION_RECEIVED':
+        t = setTimeout(() => advance(orderId), 4000); // "collected" → DELIVERED
+        break;
     }
     return () => {
       if (t) clearTimeout(t);

@@ -17,18 +17,22 @@ const NEXT: Partial<Record<OrderState, OrderState>> = {
   AGENT_ASSIGNED: 'PICKED_UP',
   PICKED_UP: 'OUT_FOR_DELIVERY',
   OUT_FOR_DELIVERY: 'ARRIVED',
-  ARRIVED: 'DELIVERED',
+  ARRIVED: 'CONFIRMATION_RECEIVED', // handover verified — courier still has to collect the fare
+  CONFIRMATION_RECEIVED: 'DELIVERED', // slide-to-complete
 };
 
 interface OrdersState {
   orders: Record<string, Order>;
   place: (draft: Omit<Order, 'id' | 'state' | 'createdAt' | 'updatedAt' | 'fare'>) => Order;
   /** First-come-first-served: one atomic conditional write on an unassigned order. */
-  accept: (orderId: string, courierRegNo: string) => 'ok' | 'taken' | 'missing';
+  accept: (orderId: string, courierRegNo: string, courierUpi?: string) => 'ok' | 'taken' | 'missing';
   advance: (orderId: string) => void;
   arrive: (orderId: string) => string; // generates OTP, returns code (customer side reads it)
   confirmHandover: (orderId: string, code: string) => 'ok' | 'wrong' | 'expired';
   cancel: (orderId: string) => void;
+  rate: (orderId: string, rating: number) => void;
+  /** Customer report flags the order DISPUTED. Courier report releases it back to the pool. */
+  report: (orderId: string, by: 'customer' | 'courier', reason: string, note?: string) => void;
   reset: () => void;
 }
 
@@ -51,13 +55,13 @@ export const useOrders = create<OrdersState>()(
         set((s) => ({ orders: { ...s.orders, [order.id]: order } }));
         return order;
       },
-      accept: (orderId, courierRegNo) => {
+      accept: (orderId, courierRegNo, courierUpi) => {
         // The conditional write: only succeeds if still unassigned.
         const o = get().orders[orderId];
         if (!o) return 'missing';
         if (o.state !== 'ORDER_PLACED' || o.courierRegNo) return 'taken';
         set((s) => ({
-          orders: { ...s.orders, [orderId]: { ...o, courierRegNo, state: 'AGENT_ASSIGNED', updatedAt: now() } },
+          orders: { ...s.orders, [orderId]: { ...o, courierRegNo, courierUpi, state: 'AGENT_ASSIGNED', updatedAt: now() } },
         }));
         return 'ok';
       },
@@ -88,7 +92,7 @@ export const useOrders = create<OrdersState>()(
         if (now() > o.otp.expiresAt) return 'expired';
         if (o.otp.code !== code) return 'wrong';
         set((s) => ({
-          orders: { ...s.orders, [orderId]: { ...o, state: 'DELIVERED', updatedAt: now() } }, // payment is out of scope for now: a confirmed handover closes the order
+          orders: { ...s.orders, [orderId]: { ...o, state: 'CONFIRMATION_RECEIVED', updatedAt: now() } },
         }));
         return 'ok';
       },
@@ -97,6 +101,23 @@ export const useOrders = create<OrdersState>()(
           const o = s.orders[orderId];
           if (!o) return {};
           return { orders: { ...s.orders, [orderId]: { ...o, state: 'CANCELLED', updatedAt: now() } } };
+        }),
+      rate: (orderId, rating) =>
+        set((s) => {
+          const o = s.orders[orderId];
+          if (!o) return {};
+          return { orders: { ...s.orders, [orderId]: { ...o, rating, updatedAt: now() } } };
+        }),
+      report: (orderId, by, reason, note) =>
+        set((s) => {
+          const o = s.orders[orderId];
+          if (!o) return {};
+          const report = { by, reason, note: note || undefined, at: now() };
+          const next: Order =
+            by === 'courier'
+              ? { ...o, report, courierRegNo: undefined, courierUpi: undefined, otp: undefined, state: 'ORDER_PLACED', updatedAt: now() }
+              : { ...o, report, state: 'DISPUTED', updatedAt: now() };
+          return { orders: { ...s.orders, [orderId]: next } };
         }),
       reset: () => set({ orders: {} }),
     }),

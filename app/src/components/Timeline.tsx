@@ -9,6 +9,7 @@ const STEPS: { state: OrderState; label: string }[] = [
   { state: 'PICKED_UP', label: 'Picked up' },
   { state: 'OUT_FOR_DELIVERY', label: 'On the way' },
   { state: 'ARRIVED', label: 'Arrived' },
+  { state: 'CONFIRMATION_RECEIVED', label: 'Handover confirmed' },
   { state: 'DELIVERED', label: 'Delivered' },
 ];
 

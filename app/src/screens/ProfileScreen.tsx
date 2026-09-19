@@ -1,6 +1,6 @@
 import type React from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { ParcelGlyph, WalkerGlyph } from '../components/Glyphs';
@@ -14,6 +14,7 @@ export function ProfileScreen() {
   const user = useAuth((s) => s.user)!;
   const setRole = useAuth((s) => s.setRole);
   const signOut = useAuth((s) => s.signOut);
+  const setUpi = useAuth((s) => s.setUpi);
   const orders = useOrders((s) => s.orders);
   const resetOrders = useOrders((s) => s.reset);
 
@@ -81,9 +82,22 @@ export function ProfileScreen() {
         <Card style={{ gap: 0 }}>
           <Row k="Phone" v={user.phone ?? '—'} />
           <Row k="Email" v={user.email ?? '—'} />
-          <Row k="Hostel block" v={user.block ?? '—'} last />
+          <Row k="Hostel block" v={user.block ?? '—'} />
+          <View style={[s.row, { paddingVertical: 6 }]}>
+            <T kind="caption" style={{ fontSize: 13 }}>
+              UPI ID
+            </T>
+            <TextInput
+              value={user.upi ?? ''}
+              onChangeText={setUpi}
+              placeholder="yourname@upi"
+              placeholderTextColor={colors.muted}
+              autoCapitalize="none"
+              style={s.upiInput}
+            />
+          </View>
         </Card>
-        <T kind="caption">Only shown to a courier while they carry your parcel.</T>
+        <T kind="caption">Only shown to a courier while they carry your parcel. Your UPI ID is shown to customers so they can pay you directly.</T>
       </View>
 
       <View style={s.bottom}>
@@ -161,5 +175,6 @@ const s = StyleSheet.create({
   roleTag: { fontSize: 9.5, color: colors.brandDark, letterSpacing: 1.2, marginTop: 4 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 11 },
   rowLine: { borderBottomWidth: 1, borderColor: colors.line },
+  upiInput: { minWidth: 160, textAlign: 'right', color: colors.ink, fontFamily: fonts.mono, fontSize: 13.5, paddingVertical: 6 },
   bottom: { gap: space.sm, paddingTop: space.md },
 });

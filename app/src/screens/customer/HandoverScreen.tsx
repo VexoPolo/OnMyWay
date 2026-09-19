@@ -35,7 +35,7 @@ export function HandoverScreen({ navigation, route }: Props) {
   }, [order?.otp]);
 
   useEffect(() => {
-    if (order?.state === 'DELIVERED') navigation.replace('Delivered', { orderId });
+    if (order?.state === 'CONFIRMATION_RECEIVED' || order?.state === 'DELIVERED') navigation.replace('Delivered', { orderId });
   }, [order?.state, navigation, orderId]);
 
   if (!order?.otp) return null;
@@ -63,7 +63,7 @@ export function HandoverScreen({ navigation, route }: Props) {
         </View>
         <View style={s.row}>
           <T kind="caption">Once the courier confirms</T>
-          <T kind="state">DELIVERED</T>
+          <T kind="state">CONFIRMATION_RECEIVED</T>
         </View>
       </Card>
       {expired && (

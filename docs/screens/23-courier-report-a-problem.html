@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OnMyWay - Verify - Six digits</title>
+<title>OnMyWay - Courier - Report a problem</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -202,13 +202,22 @@ html,body{margin:0;padding:0;background:#0A0A0A}body{display:block;min-height:0;
 </head>
 <body>
 <div class="viewport"><div class="island"></div><div class="statusbar"><span>9:41</span><span>OnMyWay</span></div>
-  <div class="screen">
-    <div style="display:flex;justify-content:center;padding:32px 0"><div class="mark" style="height:30px"></div></div>
-    <div class="h1 upper">Six digits</div>
-    <p class="sub">Sent to the number on file for <span class="mono" style="color:var(--ink)">24BCE0417</span>.</p>
-    <div class="otp" style="margin-top:8px"><span class="f">1</span><span class="f">2</span><span class="f">3</span><span class="a"></span><span></span><span></span></div>
-    <div class="btn disabled">Verify</div>
-    <div class="btn ghost">Back</div>
+  <div class="screen" style="gap:12px">
+    <div class="topbar"><div class="back">‹</div><span class="chip">Order accepted</span></div>
+    <div class="h1">Pick up the parcel</div>
+    <div class="card rows" style="font-size:13px"><div class="row"><span class="k">Tracker ID</span><span class="v mono">TBA5567123890</span></div><div class="row"><span class="k">Ordered by</span><span class="v">Meera Iyer</span></div></div>
+  </div>
+  <div class="backdrop"></div>
+  <div class="sheet" style="height:66%">
+    <div class="handle"></div>
+    <div class="topbar"><h3>Can't complete this?</h3><div class="x">✕</div></div>
+    <p class="caption">You won't be penalised for reporting honestly. The requester is told straight away.</p>
+    <div class="reason sel"><span>Parcel isn't at the pickup point</span><span class="k">SELECTED</span></div>
+    <div class="reason"><span>Wrong OTP · can't collect</span><span class="k"></span></div>
+    <div class="reason"><span>Customer not answering</span><span class="k"></span></div>
+    <div class="spacer"></div>
+    <div class="btn danger">Report and release this order</div>
+    <div class="caption center">Order goes back to available for another courier</div>
   </div><div class="home-indicator"></div>
 </div>
 </body>

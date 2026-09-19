@@ -9,17 +9,17 @@ const SIZE_LABEL = { S: 'Small', M: 'Medium', L: 'Large', XL: 'Extra large' } as
 export function OrderCard({ order, onPress, taken }: { order: Order; onPress?: () => void; taken?: boolean }) {
   return (
     <Pressable onPress={onPress} disabled={!onPress}>
-      <Card style={[taken && s.taken]}>
+      <Card style={[taken && s.taken, order.state === 'DISPUTED' && { borderColor: 'rgba(239,68,68,0.35)' }]}>
         <View style={s.row}>
           <T kind="mono" style={{ color: colors.muted }}>
             {order.id}
           </T>
-          <T kind="state">{taken ? 'TAKEN' : order.state}</T>
+          <T kind="state" style={order.state === 'DISPUTED' && { color: colors.error }}>{taken ? 'TAKEN' : order.state}</T>
         </View>
         <Route pickup={order.pickup} dropoff={order.dropoff} />
         <View style={s.row}>
           <T kind="caption">
-            {SIZE_LABEL[order.size]} · {order.distanceKm} km
+            {order.state === 'DISPUTED' && order.report ? `${order.report.reason} · ` : ''}{SIZE_LABEL[order.size]} · {order.distanceKm} km{order.rating ? ` · ★ ${order.rating}` : ''}
           </T>
           <T kind="subtitle" style={{ color: colors.brandDark }}>
             ₹{order.fare}

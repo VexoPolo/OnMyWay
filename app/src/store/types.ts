@@ -10,6 +10,7 @@ export const ORDER_STATES = [
   'PAID',
   'DELIVERED',
   'CANCELLED',
+  'DISPUTED',
 ] as const;
 export type OrderState = (typeof ORDER_STATES)[number];
 
@@ -21,6 +22,7 @@ export interface Profile {
   email: string;
   phone: string;
   block: string; // e.g. MH-F
+  upi?: string; // personal UPI id — couriers get paid to it, outside the app
 }
 
 export interface User extends Partial<Omit<Profile, 'regNo' | 'name'>> {
@@ -49,4 +51,7 @@ export interface Order {
   updatedAt: number;
   /** 6-digit handover code + expiry; generated when courier arrives */
   otp?: { code: string; expiresAt: number };
+  courierUpi?: string;
+  rating?: number; // 1-5, set by the customer once delivered
+  report?: { by: 'customer' | 'courier'; reason: string; note?: string; at: number };
 }

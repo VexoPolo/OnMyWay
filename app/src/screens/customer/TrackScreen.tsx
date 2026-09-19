@@ -1,35 +1,41 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { LiveMap } from '../../components/LiveMap';
+import { ReportSheet } from '../../components/ReportSheet';
 import { T } from '../../components/Text';
 import { Timeline } from '../../components/Timeline';
 import type { AppStackParams } from '../../navigation/types';
 import { useOrders } from '../../store/orders';
 import { useMockCourier } from '../../services/mockCourier';
-import { colors, radius, space } from '../../theme';
+import { colors, fonts, radius, space } from '../../theme';
 
 type Props = NativeStackScreenProps<AppStackParams, 'Track'>;
 
 const PROGRESS: Record<string, number> = { AGENT_ASSIGNED: 0.05, PICKED_UP: 0.15, OUT_FOR_DELIVERY: 0.6, ARRIVED: 1 };
 const ETA: Record<string, string> = { AGENT_ASSIGNED: '8 min', PICKED_UP: '7 min', OUT_FOR_DELIVERY: '3 min', ARRIVED: 'Here' };
+const LATE_AFTER_MS = 45 * 60_000; // no state change for this long -> nudge to report
 
 export function TrackScreen({ navigation, route }: Props) {
   const { orderId } = route.params;
   const order = useOrders((s) => s.orders[orderId]);
+  const report = useOrders((s) => s.report);
   useMockCourier(orderId);
+  const [reporting, setReporting] = useState(false);
 
   useEffect(() => {
     if (!order) return;
     if (order.state === 'ARRIVED') navigation.replace('Handover', { orderId });
-    if (order.state === 'DELIVERED') navigation.replace('Delivered', { orderId });
+    if (order.state === 'CONFIRMATION_RECEIVED' || order.state === 'DELIVERED' || order.state === 'DISPUTED') navigation.replace('Delivered', { orderId });
     if (order.state === 'CANCELLED') navigation.popToTop();
   }, [order?.state, navigation, orderId, order]);
 
   if (!order) return null;
+  const sinceMin = Math.round((Date.now() - order.updatedAt) / 60000);
+  const late = Date.now() - order.updatedAt > LATE_AFTER_MS;
 
   return (
     <View style={s.root}>
@@ -43,6 +49,16 @@ export function TrackScreen({ navigation, route }: Props) {
       </SafeAreaView>
       <View style={s.sheet}>
         <View style={s.grip} />
+        {late && (
+          <Pressable onPress={() => setReporting(true)} style={s.banner}>
+            <View style={s.bannerDot} />
+            <View style={{ flex: 1 }}>
+              <T style={{ fontSize: 13, fontFamily: fonts.bodyMedium }}>Taking longer than usual</T>
+              <T kind="caption" style={{ fontSize: 11.5 }}>No update for {sinceMin} min</T>
+            </View>
+            <T kind="mono" style={{ fontSize: 10.5, color: colors.brandDark }}>REPORT ›</T>
+          </Pressable>
+        )}
         <View style={s.row}>
           <View style={s.avatar}>
             <T kind="subtitle" style={{ color: colors.onBrand }}>
@@ -61,7 +77,25 @@ export function TrackScreen({ navigation, route }: Props) {
           <Timeline state={order.state} />
         </Card>
         <Button title="Back to home" variant="ghost" onPress={() => navigation.popToTop()} />
+        <Pressable onPress={() => setReporting(true)}>
+          <T kind="mono" style={s.link}>
+            Something wrong?
+          </T>
+        </Pressable>
       </View>
+      <ReportSheet
+        open={reporting}
+        title="Something wrong?"
+        intro={`Order ${order.trackingId ?? order.id} · courier ${order.courierRegNo ?? '—'}. Both reg numbers go to the campus admin with the full timeline.`}
+        reasons={['Courier is late', "Courier isn't responding", 'Parcel not received']}
+        submitLabel="Report and flag this order"
+        footnote="The order is marked DISPUTED on both phones"
+        onSubmit={(reason, note) => {
+          report(orderId, 'customer', reason, note);
+          setReporting(false);
+        }}
+        onClose={() => setReporting(false)}
+      />
     </View>
   );
 }
@@ -84,4 +118,7 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   avatar: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.brandB, alignItems: 'center', justifyContent: 'center' },
   card: { maxHeight: 260 },
+  banner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(245,158,11,0.10)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.35)', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 },
+  bannerDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.brandB },
+  link: { fontSize: 11, color: colors.muted, textAlign: 'center', textDecorationLine: 'underline' },
 });
