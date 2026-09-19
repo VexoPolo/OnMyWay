@@ -6,7 +6,6 @@ import { Card } from '../../components/Card';
 import { Screen } from '../../components/Screen';
 import { T } from '../../components/Text';
 import type { AppStackParams } from '../../navigation/types';
-import { useMockCourier } from '../../services/mockCourier';
 import { useOrders } from '../../store/orders';
 import { colors, fonts, radius, space } from '../../theme';
 
@@ -17,7 +16,6 @@ export function HandoverScreen({ navigation, route }: Props) {
   const { orderId } = route.params;
   const order = useOrders((s) => s.orders[orderId]);
   const refresh = useOrders((s) => s.arrive); // re-arriving issues a fresh 5-minute code
-  useMockCourier(orderId);
   const [left, setLeft] = useState('');
   const expired = left === '0:00';
 

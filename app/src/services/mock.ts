@@ -22,15 +22,6 @@ export const api = {
     const name = regNo.toUpperCase().match(REG_RE) ? 'Student ' + regNo.slice(-4) : 'Student';
     return { ok: true, token: 'demo.' + Math.random().toString(36).slice(2), name };
   },
-
-  /**
-   * Simulates the broadcast. A stand-in courier accepts only if nobody on this
-   * device has within 2 min — long enough to switch to Courier and accept yourself.
-   */
-  async findCourier(): Promise<{ regNo: string; name: string; etaMin: number }> {
-    await wait(120_000);
-    return { regNo: '22BCE0419', name: 'Aarav', etaMin: 8 };
-  },
 };
 
 export const PICKUP_POINTS = ['Main Gate', 'Amazon Pick Up Point'] as const;

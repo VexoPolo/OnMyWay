@@ -62,12 +62,13 @@ export function CourierJobScreen({ navigation, route }: Props) {
   const first = order.customerName?.split(' ')[0] ?? 'the customer';
   const pickupCode = order.pickupOtp ?? String(orderId.replace(/\D/g, '') || '58194').padEnd(5, '4').slice(0, 5);
 
-  const onAccept = () => {
-    const r = accept(orderId, me.regNo, me.upi);
+  const onAccept = async () => {
+    const r = await accept(orderId, me.regNo, me.upi);
     if (r === 'taken') setMsg('Someone else got there first. This job is taken.');
+    else if (r === 'offline') setMsg("Can't reach the server — try again.");
   };
-  const onVerify = () => {
-    const r = confirm(orderId, code);
+  const onVerify = async () => {
+    const r = await confirm(orderId, code);
     if (r === 'ok') return setMsg(undefined);
     setMsg(r === 'expired' ? 'Code expired. Ask the customer for a fresh one.' : 'Wrong code. Ask them to read it again.');
   };

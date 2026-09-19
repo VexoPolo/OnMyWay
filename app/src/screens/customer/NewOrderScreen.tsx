@@ -9,7 +9,7 @@ import { T } from '../../components/Text';
 import type { AppStackParams } from '../../navigation/types';
 import { PICKUP_POINTS, estimateKm, type PickupPoint } from '../../services/mock';
 import { useAuth } from '../../store/auth';
-import { quoteFare, useOrders } from '../../store/orders';
+import { platformOf, quoteFare, useOrders } from '../../store/orders';
 import type { PackageSize } from '../../store/types';
 import { colors, fonts, space } from '../../theme';
 
@@ -45,7 +45,8 @@ export function NewOrderScreen({ navigation }: Props) {
       dropoff,
       distanceKm: km,
       trackingId: tid,
-      platform: tid.startsWith('TBA') ? 'Amazon' : tid.startsWith('FLP') ? 'Flipkart' : tid.startsWith('MYN') ? 'Myntra' : 'Courier',
+      customerPhone: user.phone,
+      platform: platformOf(tid),
       pickupOtp: needsOtp ? pickupOtp : undefined,
     });
     navigation.replace('Searching', { orderId: order.id });

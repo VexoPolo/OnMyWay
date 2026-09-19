@@ -5,8 +5,6 @@ import { Button } from '../../components/Button';
 import { Screen } from '../../components/Screen';
 import { T } from '../../components/Text';
 import type { AppStackParams } from '../../navigation/types';
-import { api } from '../../services/mock';
-import { MOCK_COURIER } from '../../services/mockCourier';
 import { useOrders } from '../../store/orders';
 import { colors, space } from '../../theme';
 
@@ -19,20 +17,12 @@ type Props = NativeStackScreenProps<AppStackParams, 'Searching'>;
 export function SearchingScreen({ navigation, route }: Props) {
   const { orderId } = route.params;
   const order = useOrders((s) => s.orders[orderId]);
-  const accept = useOrders((s) => s.accept);
   const cancel = useOrders((s) => s.cancel);
 
   useEffect(() => {
-    // Deliberately not cancelled on unmount: the customer may leave this screen
-    // while the broadcast is still out. accept() is a no-op if someone real took it.
-    api.findCourier().then(() => accept(orderId, MOCK_COURIER, 'aarav@okaxis'));
-  }, [orderId, accept]);
-
-  useEffect(() => {
-    if (order && order.state !== 'ORDER_PLACED' && order.state !== 'CANCELLED') {
-      navigation.replace('Track', { orderId });
-    }
-    if (order?.state === 'CANCELLED') navigation.popToTop();
+    if (!order) return navigation.popToTop(); // the server rejected the order
+    if (order.state !== 'ORDER_PLACED' && order.state !== 'CANCELLED') navigation.replace('Track', { orderId });
+    if (order.state === 'CANCELLED') navigation.popToTop();
   }, [order?.state, navigation, orderId, order]);
 
   return (

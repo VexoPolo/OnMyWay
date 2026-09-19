@@ -87,10 +87,10 @@ function CourierHome() {
     setOpenId(null);
     if (!user.online) setOnline(true);
   };
-  const start = (o: Order) => {
+  const start = async (o: Order) => {
     if (o.state === 'ORDER_PLACED') {
-      const r = accept(o.id, user.regNo, user.upi);
-      if (r === 'taken') return setNudge('Someone else got there first.');
+      const r = await accept(o.id, user.regNo, user.upi);
+      if (r !== 'ok') return setNudge(r === 'taken' ? 'Someone else got there first.' : "Can't reach the server — try again.");
     }
     nav.navigate('CourierJob', { orderId: o.id, point: loc ?? undefined });
   };

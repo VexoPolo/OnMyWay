@@ -10,7 +10,6 @@ import { T } from '../../components/Text';
 import { Timeline } from '../../components/Timeline';
 import type { AppStackParams } from '../../navigation/types';
 import { useOrders } from '../../store/orders';
-import { useMockCourier } from '../../services/mockCourier';
 import { colors, fonts, radius, space } from '../../theme';
 
 type Props = NativeStackScreenProps<AppStackParams, 'Track'>;
@@ -23,7 +22,6 @@ export function TrackScreen({ navigation, route }: Props) {
   const { orderId } = route.params;
   const order = useOrders((s) => s.orders[orderId]);
   const report = useOrders((s) => s.report);
-  useMockCourier(orderId);
   const [reporting, setReporting] = useState(false);
 
   useEffect(() => {

@@ -7,7 +7,6 @@ import { ReportSheet } from '../../components/ReportSheet';
 import { Screen } from '../../components/Screen';
 import { T } from '../../components/Text';
 import type { AppStackParams } from '../../navigation/types';
-import { useMockCourier } from '../../services/mockCourier';
 import { useOrders } from '../../store/orders';
 import { colors, fonts, radius, space } from '../../theme';
 
@@ -19,7 +18,6 @@ export function DeliveredScreen({ navigation, route }: Props) {
   const order = useOrders((s) => s.orders[orderId]);
   const rate = useOrders((s) => s.rate);
   const report = useOrders((s) => s.report);
-  useMockCourier(orderId);
   const [reporting, setReporting] = useState(false);
 
   if (!order) return null;

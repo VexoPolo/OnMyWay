@@ -36,6 +36,7 @@ export interface Order {
   id: string;
   customerRegNo: string;
   courierRegNo?: string;
+  courierName?: string;
   size: PackageSize;
   pickup: string;
   dropoff: string;
@@ -43,6 +44,7 @@ export interface Order {
   fare: number;
   note?: string;
   customerName?: string;
+  customerPhone?: string;
   trackingId?: string;
   platform?: string; // e.g. Amazon, Flipkart
   pickupOtp?: string; // platform's collection code, shared with the courier on request
