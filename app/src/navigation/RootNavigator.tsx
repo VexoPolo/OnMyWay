@@ -1,7 +1,9 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { DarkTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, View } from 'react-native';
+import { PinGlyph, WalkerGlyph } from '../components/Glyphs';
 import { HomeScreen } from '../screens/HomeScreen';
 import { MyOrdersScreen } from '../screens/MyOrdersScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
@@ -30,10 +32,15 @@ const theme = {
 
 const noHeader = { headerShown: false } as const;
 
-function Icon({ label, focused }: { label: string; focused: boolean }) {
+/** Tab icon with the tint-and-dot active state. Home = the logo's pin, Orders = cube, Profile = the walker. */
+function Icon({ kind, focused }: { kind: 'home' | 'orders' | 'profile'; focused: boolean }) {
+  const c = focused ? colors.brandDark : colors.muted;
   return (
-    <View style={[s.icon, focused && s.iconOn]}>
-      <Text style={[s.iconText, focused && s.iconTextOn]}>{label}</Text>
+    <View style={s.icon}>
+      {kind === 'home' && <PinGlyph size={24} color={c} />}
+      {kind === 'orders' && <Ionicons name="cube" size={23} color={c} />}
+      {kind === 'profile' && <WalkerGlyph size={24} color={c} />}
+      {focused && <View style={s.dot} />}
     </View>
   );
 }
@@ -49,13 +56,13 @@ function Tabs() {
         tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: 11 },
       }}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarIcon: ({ focused }) => <Icon label="H" focused={focused} /> }} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarIcon: ({ focused }) => <Icon kind="home" focused={focused} /> }} />
       <Tab.Screen
         name="MyOrders"
         component={MyOrdersScreen}
-        options={{ title: 'My Orders', tabBarIcon: ({ focused }) => <Icon label="O" focused={focused} /> }}
+        options={{ title: 'My Orders', tabBarIcon: ({ focused }) => <Icon kind="orders" focused={focused} /> }}
       />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarIcon: ({ focused }) => <Icon label="P" focused={focused} /> }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarIcon: ({ focused }) => <Icon kind="profile" focused={focused} /> }} />
     </Tab.Navigator>
   );
 }
@@ -90,8 +97,6 @@ export function RootNavigator() {
 }
 
 const s = StyleSheet.create({
-  icon: { width: 26, height: 26, borderRadius: 7, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
-  iconOn: { backgroundColor: colors.brandB, borderColor: colors.brandB },
-  iconText: { fontFamily: fonts.monoMedium, fontSize: 12, color: colors.muted },
-  iconTextOn: { color: colors.onBrand },
+  icon: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
+  dot: { position: 'absolute', bottom: -6, width: 4, height: 4, borderRadius: 2, backgroundColor: colors.brandDark },
 });

@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { ParcelGlyph, WalkerGlyph } from '../components/Glyphs';
 import { Screen } from '../components/Screen';
 import { T } from '../components/Text';
 import { useAuth } from '../store/auth';
@@ -61,14 +62,14 @@ export function ProfileScreen() {
             on={user.role === 'courier'}
             title="Deliver & earn"
             body="Carry parcels on your way"
-            icon={<WalkerGlyph />}
+            icon={<WalkerGlyph size={22} />}
             onPress={() => setRole('courier')}
           />
           <RoleCard
             on={user.role === 'customer'}
             title="Get delivered"
             body="Skip the walk to the gate"
-            icon={<ParcelGlyph />}
+            icon={<ParcelGlyph size={22} />}
             onPress={() => setRole('customer')}
           />
         </View>
@@ -116,29 +117,6 @@ function RoleCard({ on, title, body, icon, onPress }: { on: boolean; title: stri
         </T>
       )}
     </Pressable>
-  );
-}
-
-/** Small black walking figure with a parcel. */
-function WalkerGlyph() {
-  return (
-    <View style={{ width: 20, height: 24, alignItems: 'center' }}>
-      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.onBrand }} />
-      <View style={{ width: 2.2, height: 8, backgroundColor: colors.onBrand, borderRadius: 1 }} />
-      <View style={{ position: 'absolute', top: 8, right: 1, width: 6, height: 5, borderRadius: 1, backgroundColor: colors.onBrand }} />
-      <View style={{ position: 'absolute', top: 13, width: 2.2, height: 10, borderRadius: 1, backgroundColor: colors.onBrand, transform: [{ rotate: '-24deg' }, { translateY: 3 }] }} />
-      <View style={{ position: 'absolute', top: 13, width: 2.2, height: 10, borderRadius: 1, backgroundColor: colors.onBrand, transform: [{ rotate: '24deg' }, { translateY: 3 }] }} />
-    </View>
-  );
-}
-
-/** Small black parcel: box outline with a tape line. */
-function ParcelGlyph() {
-  return (
-    <View style={{ width: 20, height: 18, borderWidth: 2.2, borderColor: colors.onBrand, borderRadius: 3, justifyContent: 'center' }}>
-      <View style={{ position: 'absolute', top: 3, left: 0, right: 0, height: 2.2, backgroundColor: colors.onBrand }} />
-      <View style={{ position: 'absolute', top: 3, left: 6, width: 2.2, bottom: 0, backgroundColor: colors.onBrand }} />
-    </View>
   );
 }
 

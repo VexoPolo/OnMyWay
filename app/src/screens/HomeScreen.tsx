@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '../components/Button';
 import { Logo } from '../components/Logo';
 import { OrderCard } from '../components/OrderCard';
+import { WalkerGlyph } from '../components/Glyphs';
 import { PICKUP_POINTS, type PickupPoint } from '../services/mock';
 import type { Order } from '../store/types';
 import { Screen } from '../components/Screen';
@@ -74,6 +75,11 @@ function CourierHome() {
   const all = Object.values(orders).sort((a, b) => b.createdAt - a.createdAt);
   // ponytail: own orders are listed too so one phone can play both roles; the backend will exclude them
   const open = all.filter((o) => o.state === 'ORDER_PLACED');
+  const delivered = all.filter((o) => o.courierRegNo === user.regNo && o.state === 'DELIVERED');
+  const earned = delivered.reduce((sum, o) => sum + o.fare, 0);
+  const doneToday = all.filter((o) => o.state === 'DELIVERED' && Date.now() - o.updatedAt < 86_400_000);
+  const avgFare = doneToday.length ? Math.round(doneToday.reduce((sum, o) => sum + o.fare, 0) / doneToday.length) : 45;
+  const couriersOnline = 2 + (user.online ? 1 : 0); // ponytail: presence needs a backend; 2 stand-ins until then
   const here = loc ? all.filter((o) => o.pickup === loc && (o.state === 'ORDER_PLACED' || (o.courierRegNo === user.regNo && ACTIVE.has(o.state)))) : [];
 
   const pick = (p: PickupPoint) => {
@@ -106,23 +112,41 @@ function CourierHome() {
       <T kind="h1" style={s.h1}>Where are you?</T>
       <T kind="caption" style={s.sub}>Pick your location to see the orders assigned to you there.</T>
 
+      {/* earnings ribbon */}
+      <View style={s.ribbon}>
+        <View style={s.ribbonIcon}>
+          <WalkerGlyph size={22} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <T style={{ fontSize: 14, fontFamily: fonts.bodySemi }}>
+            {earned > 0 ? `You've earned ₹${earned} this week` : 'Nothing earned yet this week'}
+          </T>
+          <T kind="caption" style={{ fontSize: 11.5 }}>
+            {delivered.length} {delivered.length === 1 ? 'delivery' : 'deliveries'} · {open.length > 0 ? `${open.length} waiting right now` : 'keep walking past the gate'}
+          </T>
+        </View>
+      </View>
+
+      {/* live pulse */}
+      <View style={s.stats}>
+        <Stat n={open.length} label="orders waiting" />
+        <Stat n={couriersOnline} label="couriers online" />
+        <Stat n={`₹${avgFare}`} label="avg fare today" />
+      </View>
+
       <View style={s.seg}>
-        {PICKUP_POINTS.map((p) => {
-          const on = p === loc;
+        {PICKUP_POINTS.map((pt) => {
+          const on = pt === loc;
+          const n = open.filter((o) => o.pickup === pt).length;
           return (
-            <Pressable key={p} onPress={() => pick(p)} style={[s.segBtn, on && s.segOn]}>
-              <T style={[s.segText, on && { color: colors.onBrand, fontFamily: fonts.bodySemi }]}>{p}</T>
+            <Pressable key={pt} onPress={() => pick(pt)} style={[s.segBtn, on && s.segOn]}>
+              <T style={[s.segText, on && { color: colors.onBrand, fontFamily: fonts.bodySemi }]}>
+                {pt}{n > 0 ? ` · ${n}` : ''}
+              </T>
             </Pressable>
           );
         })}
       </View>
-
-      {!loc && (
-        <View style={s.empty}>
-          <Logo variant="mark" height={44} />
-          <T kind="caption" style={{ textAlign: 'center', maxWidth: 240 }}>Choose a pickup point above to see your assigned orders</T>
-        </View>
-      )}
 
       {loc && (
         <View style={s.section}>
@@ -182,6 +206,15 @@ function CourierHome() {
   );
 }
 
+function Stat({ n, label }: { n: number | string; label: string }) {
+  return (
+    <View style={s.stat}>
+      <T style={s.statN}>{n}</T>
+      <T kind="caption" style={{ fontSize: 11 }}>{label}</T>
+    </View>
+  );
+}
+
 function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
   return (
     <View style={s.row}>
@@ -216,7 +249,11 @@ const s = StyleSheet.create({
   segBtn: { flex: 1, paddingVertical: 9, borderRadius: 8, alignItems: 'center' },
   segOn: { backgroundColor: colors.brandB },
   segText: { fontSize: 12.5, fontFamily: fonts.bodyMedium, color: colors.muted },
-  empty: { alignItems: 'center', gap: 14, paddingVertical: 48, opacity: 0.8 },
+  stats: { flexDirection: 'row', gap: 8 },
+  stat: { flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 6, alignItems: 'center', gap: 2 },
+  statN: { fontFamily: fonts.displayBlack, fontSize: 20, color: colors.brandDark },
+  ribbon: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'rgba(252,211,77,0.07)', borderWidth: 1, borderColor: 'rgba(252,211,77,0.22)', borderRadius: 14, padding: 12 },
+  ribbonIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.brandB, alignItems: 'center', justifyContent: 'center' },
   item: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 14, overflow: 'hidden' },
   itemOpen: { borderColor: 'rgba(252,211,77,0.3)' },
   itemHead: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
