@@ -15,7 +15,7 @@ export function RoleScreen() {
         icon="🛵"
         title="Deliver & earn"
         body="Pick up parcels on your way back to the block"
-        chip="~₹40 per pickup"
+        chip="₹20–30 per pickup"
         glow={['rgba(252,211,77,0.45)', 'rgba(245,158,11,0.28)', 'rgba(10,10,10,0)'] as const}
         glowStart={{ x: 0.5, y: 0 }}
         glowEnd={{ x: 0.5, y: 0.9 }}

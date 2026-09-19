@@ -7,8 +7,8 @@ import { supabase } from '../services/supabase';
 import { useAuth } from './auth';
 import type { Order, OrderState, PackageSize } from './types';
 
-// Frames price by parcel class only: Regular (S/M) ₹40, Large (L/XL) ₹55.
-const SIZE_BASE: Record<PackageSize, number> = { S: 40, M: 40, L: 55, XL: 55 };
+// Priced by parcel class only: Regular (S/M) ₹20, Large (L/XL) ₹30.
+const SIZE_BASE: Record<PackageSize, number> = { S: 20, M: 20, L: 30, XL: 30 };
 const PER_KM = 0;
 const PIN_TTL = 5 * 60_000;
 

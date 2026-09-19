@@ -78,7 +78,7 @@ function CourierHome() {
   const delivered = all.filter((o) => o.courierRegNo === user.regNo && o.state === 'DELIVERED');
   const earned = delivered.reduce((sum, o) => sum + o.fare, 0);
   const doneToday = all.filter((o) => o.state === 'DELIVERED' && Date.now() - o.updatedAt < 86_400_000);
-  const avgFare = doneToday.length ? Math.round(doneToday.reduce((sum, o) => sum + o.fare, 0) / doneToday.length) : 45;
+  const avgFare = doneToday.length ? Math.round(doneToday.reduce((sum, o) => sum + o.fare, 0) / doneToday.length) : 25;
   const couriersOnline = 2 + (user.online ? 1 : 0); // ponytail: presence needs a backend; 2 stand-ins until then
   const here = loc ? all.filter((o) => o.pickup === loc && (o.state === 'ORDER_PLACED' || (o.courierRegNo === user.regNo && ACTIVE.has(o.state)))) : [];
 
