@@ -1,5 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { ParcelGlyph, WalkerGlyph } from '../../components/Glyphs';
 import { T } from '../../components/Text';
 import { useAuth } from '../../store/auth';
 import type { Role } from '../../store/types';
@@ -12,7 +13,7 @@ export function RoleScreen() {
     <View style={s.root}>
       <Half
         role="courier"
-        icon="🛵"
+        icon={<WalkerGlyph size={30} />}
         title="Deliver & earn"
         body="Pick up parcels on your way back to the block"
         chip="₹20–30 per pickup"
@@ -29,7 +30,7 @@ export function RoleScreen() {
       </View>
       <Half
         role="customer"
-        icon="📦"
+        icon={<ParcelGlyph size={30} />}
         title="Get something delivered"
         body="Skip the walk to the gate — someone's already headed your way"
         chip="Avg. wait ~20 min"
@@ -44,7 +45,7 @@ export function RoleScreen() {
 
 function Half(p: {
   role: Role;
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   body: string;
   chip: string;
@@ -55,10 +56,10 @@ function Half(p: {
   bordered?: boolean;
 }) {
   return (
-    <Pressable onPress={p.onPress} style={({ pressed }) => [s.half, p.bordered && s.halfBorder, pressed && { opacity: 0.85 }]}>
+    <Pressable onPress={p.onPress} accessibilityRole="button" accessibilityLabel={p.title} style={({ pressed }) => [s.half, p.bordered && s.halfBorder, pressed && { opacity: 0.85 }]}>
       <LinearGradient colors={p.glow} start={p.glowStart} end={p.glowEnd} style={StyleSheet.absoluteFill} />
       <LinearGradient colors={[...brandGradient]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.icon}>
-        <T style={{ fontSize: 26 }}>{p.icon}</T>
+        {p.icon}
       </LinearGradient>
       <T style={s.title}>{p.title}</T>
       <T style={s.body}>{p.body}</T>

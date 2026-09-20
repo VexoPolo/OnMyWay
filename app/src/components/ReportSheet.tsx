@@ -28,7 +28,7 @@ export function ReportSheet({ open, title, intro, reasons, submitLabel, footnote
           <T kind="title" style={{ fontSize: 17 }}>
             {title}
           </T>
-          <Pressable onPress={onClose} style={s.close}>
+          <Pressable onPress={onClose} style={s.close} accessibilityRole="button" accessibilityLabel="Close" hitSlop={8}>
             <T style={{ color: colors.muted, fontSize: 12 }}>✕</T>
           </Pressable>
         </View>

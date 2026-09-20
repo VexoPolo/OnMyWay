@@ -92,7 +92,7 @@ export function DeliveredScreen({ navigation, route }: Props) {
         {[1, 2, 3, 4, 5].map((n) => {
           const on = (order.rating ?? 0) >= n;
           return (
-            <Pressable key={n} onPress={() => rate(orderId, n)} style={[s.star, on && s.starOn]}>
+            <Pressable key={n} onPress={() => rate(orderId, n)} style={[s.star, on && s.starOn]} accessibilityRole="button" accessibilityLabel={`Rate ${n} star${n > 1 ? 's' : ''}`}>
               <T style={{ fontSize: 18, color: on ? colors.onBrand : colors.line }}>★</T>
             </Pressable>
           );

@@ -9,7 +9,7 @@ export const colors = {
   brandDark: '#FBBF24', // yellow as text on dark
   brandLight: '#A16207', // yellow as text on light
   light: '#F1F1F1',
-  muted: '#737373',
+  muted: '#8A8A90', // 5.2:1 on surface — WCAG AA for the small mono labels
   ink: '#F4F4F5',
   warning: '#EA580C',
   error: '#EF4444',

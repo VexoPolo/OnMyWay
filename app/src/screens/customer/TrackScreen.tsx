@@ -72,7 +72,7 @@ export function TrackScreen({ navigation, route }: Props) {
             </T>
           </View>
           {order.courierPhone ? (
-            <Pressable onPress={() => Linking.openURL(`tel:${order.courierPhone}`)} style={s.call}>
+            <Pressable onPress={() => Linking.openURL(`tel:${order.courierPhone}`)} style={s.call} accessibilityRole="button" accessibilityLabel={`Call ${order.courierName ?? 'courier'}`}>
               <T kind="mono" style={{ fontSize: 11, color: colors.onBrand }}>CALL</T>
             </Pressable>
           ) : (

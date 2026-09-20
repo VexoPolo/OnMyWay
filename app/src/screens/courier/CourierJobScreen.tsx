@@ -68,7 +68,7 @@ export function CourierJobScreen({ navigation, route }: Props) {
   return (
     <Screen scroll>
       <View style={s.topbar}>
-        <Pressable onPress={() => navigation.goBack()} style={s.back}>
+        <Pressable onPress={() => navigation.goBack()} style={s.back} accessibilityRole="button" accessibilityLabel="Back" hitSlop={8}>
           <T style={{ fontSize: 18, lineHeight: 20 }}>‹</T>
         </Pressable>
         <View style={s.chip}>
