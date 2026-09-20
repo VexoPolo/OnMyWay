@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { colors, fonts, radius, space } from '../theme';
 import { Button } from './Button';
+import { Tap } from './Tap';
 import { T } from './Text';
 
 interface Props {
@@ -28,9 +29,9 @@ export function ReportSheet({ open, title, intro, reasons, submitLabel, footnote
           <T kind="title" style={{ fontSize: 17 }}>
             {title}
           </T>
-          <Pressable onPress={onClose} style={s.close} accessibilityRole="button" accessibilityLabel="Close" hitSlop={8}>
+          <Tap onPress={onClose} style={s.close} accessibilityRole="button" accessibilityLabel="Close" hitSlop={8}>
             <T style={{ color: colors.muted, fontSize: 12 }}>✕</T>
-          </Pressable>
+          </Tap>
         </View>
         <T kind="caption" style={{ lineHeight: 17 }}>
           {intro}
@@ -39,14 +40,14 @@ export function ReportSheet({ open, title, intro, reasons, submitLabel, footnote
           {reasons.map((r) => {
             const on = r === reason;
             return (
-              <Pressable key={r} onPress={() => setReason(r)} style={[s.reason, on && s.reasonOn]}>
+              <Tap key={r} onPress={() => setReason(r)} style={[s.reason, on && s.reasonOn]}>
                 <T style={{ fontSize: 14, fontFamily: fonts.bodyMedium }}>{r}</T>
                 {on && (
                   <T kind="mono" style={{ fontSize: 10.5, color: colors.brandDark }}>
                     SELECTED
                   </T>
                 )}
-              </Pressable>
+              </Tap>
             );
           })}
         </View>

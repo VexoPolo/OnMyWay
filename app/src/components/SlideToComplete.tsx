@@ -39,11 +39,28 @@ export function SlideToComplete({ label = 'Slide to complete', onComplete }: { l
     }),
   ).current;
 
+  // Screen readers and anyone who can't drag: the track is a button that completes on long-press.
+  const complete = () => {
+    if (done) return;
+    Animated.spring(x, { toValue: max, useNativeDriver: NATIVE, speed: 24, bounciness: 0 }).start(() => {
+      setDone(true);
+      onComplete();
+    });
+  };
+
   const labelOpacity = x.interpolate({ inputRange: [0, Math.max(1, max * 0.6)], outputRange: [1, 0], extrapolate: 'clamp' });
   const fillW = x.interpolate({ inputRange: [0, Math.max(1, max)], outputRange: [THUMB + PAD * 2, w || 1], extrapolate: 'clamp' });
 
   return (
-    <View style={s.track} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
+    <View
+      style={s.track}
+      onLayout={(e) => setW(e.nativeEvent.layout.width)}
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={done ? 'Completed' : `${label}. Slide right, or long-press to complete.`}
+      accessibilityActions={[{ name: 'activate', label: 'Complete' }]}
+      onAccessibilityAction={complete}
+    >
       <Animated.View style={[s.fill, { width: fillW }]} />
       <Animated.Text style={[s.label, { opacity: labelOpacity }]}>{done ? '' : label}</Animated.Text>
       {done && <T style={s.doneLabel}>Completed</T>}

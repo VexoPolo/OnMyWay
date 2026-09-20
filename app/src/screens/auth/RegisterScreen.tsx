@@ -4,6 +4,8 @@ import { FlatList, Modal, Pressable, StyleSheet, TextInput, View } from 'react-n
 import { Button } from '../../components/Button';
 import { Field } from '../../components/Field';
 import { Screen } from '../../components/Screen';
+import { Tap } from '../../components/Tap';
+import { Ionicons } from '@expo/vector-icons';
 import { T } from '../../components/Text';
 import type { AuthStackParams } from '../../navigation/types';
 import { useAuth } from '../../store/auth';
@@ -90,39 +92,39 @@ export function RegisterScreen({ navigation }: Props) {
 
       <View style={{ gap: 6 }}>
         <T kind="eyebrow">Hostel block</T>
-        <Pressable onPress={() => setSheet(true)} style={s.picker}>
+        <Tap onPress={() => setSheet(true)} style={s.picker}>
           <T style={!block && { color: colors.muted }}>{block ?? 'Select your block'}</T>
           <T style={{ color: colors.muted, fontSize: 12 }}>▾</T>
-        </Pressable>
+        </Tap>
       </View>
 
       <View style={{ gap: 6 }}>
         <T kind="eyebrow">ID card</T>
         {/* ponytail: no image picker yet — tap marks it attached; add expo-image-picker when real upload is wired */}
-        <Pressable onPress={() => setIdAttached((v) => !v)} style={[s.upload, idAttached && s.uploadOn]}>
+        <Tap onPress={() => setIdAttached((v) => !v)} style={[s.upload, idAttached && s.uploadOn]}>
           <View style={s.uploadIcon}>
-            <T style={{ fontSize: 17 }}>{idAttached ? '✓' : '📷'}</T>
+            <Ionicons name={idAttached ? 'checkmark' : 'camera-outline'} size={20} color={idAttached ? colors.brandDark : colors.ink} />
           </View>
           <T style={{ fontSize: 13.5, fontFamily: fonts.bodyMedium }}>{idAttached ? 'ID attached' : 'Scan or upload your ID'}</T>
           <T kind="caption" style={{ fontSize: 11.5 }}>
             Clear photo, all corners visible
           </T>
-        </Pressable>
+        </Tap>
       </View>
 
       <View style={s.trust}>
-        <T style={{ color: colors.brandDark, fontSize: 13 }}>🔒</T>
+        <Ionicons name="lock-closed" size={14} color={colors.brandDark} />
         <T kind="caption" style={{ flex: 1, fontSize: 11.5, lineHeight: 16 }}>
           Used only to verify you're a student here — never shown to other users.
         </T>
       </View>
 
       <Button title="Continue" onPress={submit} disabled={!valid} style={{ marginTop: space.sm }} />
-      <Pressable onPress={() => navigation.navigate('SignIn')}>
+      <Tap onPress={() => navigation.navigate('SignIn')}>
         <T kind="caption" style={s.foot}>
           Already registered? <T kind="caption" style={{ color: colors.brandDark }}>Sign in</T>
         </T>
-      </Pressable>
+      </Tap>
 
       <BlockSheet open={sheet} value={block} onPick={setBlock} onClose={() => setSheet(false)} />
     </Screen>
@@ -147,15 +149,15 @@ function BlockSheet({ open, value, onPick, onClose }: { open: boolean; value: st
           <T kind="title" style={{ fontSize: 17 }}>
             Select your block
           </T>
-          <Pressable onPress={onClose} style={s.close}>
+          <Tap onPress={onClose} style={s.close}>
             <T style={{ color: colors.muted, fontSize: 12 }}>✕</T>
-          </Pressable>
+          </Tap>
         </View>
         <View style={s.seg}>
           {(['MH', 'LH'] as const).map((h) => {
             const on = h === hostel;
             return (
-              <Pressable
+              <Tap
                 key={h}
                 onPress={() => {
                   setHostel(h);
@@ -166,7 +168,7 @@ function BlockSheet({ open, value, onPick, onClose }: { open: boolean; value: st
                 <T style={[{ fontSize: 12.5, fontFamily: fonts.bodyMedium, color: colors.muted }, on && { color: colors.onBrand }]}>
                   {h === 'MH' ? "Men's Hostel" : 'Ladies Hostel'}
                 </T>
-              </Pressable>
+              </Tap>
             );
           })}
         </View>
@@ -184,7 +186,7 @@ function BlockSheet({ open, value, onPick, onClose }: { open: boolean; value: st
           contentContainerStyle={{ gap: 6 }}
           ListEmptyComponent={<T kind="caption" style={{ textAlign: 'center', paddingVertical: 30 }}>{`No blocks match "${q.trim().toUpperCase()}"`}</T>}
           renderItem={({ item }) => (
-            <Pressable
+            <Tap
               onPress={() => {
                 onPick(item);
                 onClose();
@@ -195,7 +197,7 @@ function BlockSheet({ open, value, onPick, onClose }: { open: boolean; value: st
               <T kind="mono" style={{ fontSize: 10, color: colors.muted }}>
                 {hostel === 'MH' ? "Men's" : 'Ladies'}
               </T>
-            </Pressable>
+            </Tap>
           )}
         />
       </View>

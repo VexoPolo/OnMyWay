@@ -10,6 +10,7 @@ import { WalkerGlyph } from '../components/Glyphs';
 import { PICKUP_POINTS, type PickupPoint } from '../services/mock';
 import type { Order } from '../store/types';
 import { Screen } from '../components/Screen';
+import { Tap } from '../components/Tap';
 import { T } from '../components/Text';
 import type { AppStackParams } from '../navigation/types';
 import { useAuth } from '../store/auth';
@@ -138,11 +139,11 @@ function CourierHome() {
           const on = pt === loc;
           const n = open.filter((o) => o.pickup === pt).length;
           return (
-            <Pressable key={pt} onPress={() => pick(pt)} style={[s.segBtn, on && s.segOn]}>
+            <Tap key={pt} onPress={() => pick(pt)} style={[s.segBtn, on && s.segOn]}>
               <T style={[s.segText, on && { color: colors.onBrand, fontFamily: fonts.bodySemi }]}>
                 {pt}{n > 0 ? ` · ${n}` : ''}
               </T>
-            </Pressable>
+            </Tap>
           );
         })}
       </View>
@@ -156,7 +157,7 @@ function CourierHome() {
             const large = o.size === 'L' || o.size === 'XL';
             return (
               <View key={o.id} style={[s.item, isOpen && s.itemOpen]}>
-                <Pressable onPress={() => setOpenId(isOpen ? null : o.id)} style={s.itemHead}>
+                <Tap onPress={() => setOpenId(isOpen ? null : o.id)} style={s.itemHead}>
                   <View style={{ gap: 3, flex: 1 }}>
                     <T kind="mono" style={{ fontSize: 12.5, fontFamily: fonts.monoMedium }}>{o.trackingId ?? `Parcel for ${o.customerName?.split(' ')[0] ?? o.customerRegNo}`}</T>
                     <T kind="caption" style={{ fontSize: 11.5 }}>→ {o.dropoff}</T>
@@ -165,7 +166,7 @@ function CourierHome() {
                     <T kind="mono" style={[{ fontSize: 10.5 }, large && { color: colors.brandDark }]}>{SIZE_LABEL[o.size]}</T>
                   </View>
                   <T style={{ fontSize: 11, color: isOpen ? colors.brandDark : colors.muted, transform: [{ rotate: isOpen ? '180deg' : '0deg' }] }}>▾</T>
-                </Pressable>
+                </Tap>
                 {isOpen && (
                   <View style={s.itemBody}>
                     <Row k="Platform" v={o.platform ?? '—'} />

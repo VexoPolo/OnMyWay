@@ -1,10 +1,11 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { ReportSheet } from '../../components/ReportSheet';
 import { Screen } from '../../components/Screen';
+import { Tap } from '../../components/Tap';
 import { T } from '../../components/Text';
 import type { AppStackParams } from '../../navigation/types';
 import { useOrders } from '../../store/orders';
@@ -92,20 +93,20 @@ export function DeliveredScreen({ navigation, route }: Props) {
         {[1, 2, 3, 4, 5].map((n) => {
           const on = (order.rating ?? 0) >= n;
           return (
-            <Pressable key={n} onPress={() => rate(orderId, n)} style={[s.star, on && s.starOn]} accessibilityRole="button" accessibilityLabel={`Rate ${n} star${n > 1 ? 's' : ''}`}>
+            <Tap key={n} onPress={() => rate(orderId, n)} style={[s.star, on && s.starOn]} accessibilityRole="button" accessibilityLabel={`Rate ${n} star${n > 1 ? 's' : ''}`}>
               <T style={{ fontSize: 18, color: on ? colors.onBrand : colors.line }}>★</T>
-            </Pressable>
+            </Tap>
           );
         })}
       </View>
 
       <View style={{ marginTop: 'auto', gap: 8 }}>
         <Button title="Done" onPress={() => navigation.popToTop()} />
-        <Pressable onPress={() => setReporting(true)}>
+        <Tap onPress={() => setReporting(true)}>
           <T kind="mono" style={s.link}>
             Something wrong with this delivery?
           </T>
-        </Pressable>
+        </Tap>
       </View>
 
       <ReportSheet

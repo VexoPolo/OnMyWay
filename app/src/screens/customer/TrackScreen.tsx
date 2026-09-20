@@ -1,11 +1,12 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
-import { Linking, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Linking, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { LiveMap } from '../../components/LiveMap';
 import { ReportSheet } from '../../components/ReportSheet';
+import { Tap } from '../../components/Tap';
 import { T } from '../../components/Text';
 import { Timeline } from '../../components/Timeline';
 import type { AppStackParams } from '../../navigation/types';
@@ -50,14 +51,14 @@ export function TrackScreen({ navigation, route }: Props) {
       <View style={s.sheet}>
         <View style={s.grip} />
         {late && (
-          <Pressable onPress={() => setReporting(true)} style={s.banner}>
+          <Tap onPress={() => setReporting(true)} style={s.banner}>
             <View style={s.bannerDot} />
             <View style={{ flex: 1 }}>
               <T style={{ fontSize: 13, fontFamily: fonts.bodyMedium }}>Taking longer than usual</T>
               <T kind="caption" style={{ fontSize: 11.5 }}>No update for {sinceMin} min</T>
             </View>
             <T kind="mono" style={{ fontSize: 10.5, color: colors.brandDark }}>REPORT ›</T>
-          </Pressable>
+          </Tap>
         )}
         <View style={s.row}>
           <View style={s.avatar}>
@@ -72,9 +73,9 @@ export function TrackScreen({ navigation, route }: Props) {
             </T>
           </View>
           {order.courierPhone ? (
-            <Pressable onPress={() => Linking.openURL(`tel:${order.courierPhone}`)} style={s.call} accessibilityRole="button" accessibilityLabel={`Call ${order.courierName ?? 'courier'}`}>
+            <Tap onPress={() => Linking.openURL(`tel:${order.courierPhone}`)} style={s.call} accessibilityRole="button" accessibilityLabel={`Call ${order.courierName ?? 'courier'}`}>
               <T kind="mono" style={{ fontSize: 11, color: colors.onBrand }}>CALL</T>
-            </Pressable>
+            </Tap>
           ) : (
             <T kind="state">{order.state}</T>
           )}
@@ -104,11 +105,11 @@ export function TrackScreen({ navigation, route }: Props) {
           <Timeline state={order.state} />
         </Card>
         <Button title="Back to home" variant="ghost" onPress={() => navigation.popToTop()} />
-        <Pressable onPress={() => setReporting(true)}>
+        <Tap onPress={() => setReporting(true)}>
           <T kind="mono" style={s.link}>
             Something wrong?
           </T>
-        </Pressable>
+        </Tap>
       </View>
       <ReportSheet
         open={reporting}

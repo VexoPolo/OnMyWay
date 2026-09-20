@@ -1,14 +1,15 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { Order } from '../store/types';
 import { colors, space } from '../theme';
 import { Card } from './Card';
+import { Tap } from './Tap';
 import { T } from './Text';
 
 const SIZE_LABEL = { S: 'Small', M: 'Medium', L: 'Large', XL: 'Extra large' } as const;
 
 export function OrderCard({ order, onPress, taken }: { order: Order; onPress?: () => void; taken?: boolean }) {
   return (
-    <Pressable onPress={onPress} disabled={!onPress}>
+    <Tap onPress={onPress} disabled={!onPress}>
       <Card style={[taken && s.taken, order.state === 'DISPUTED' && { borderColor: 'rgba(239,68,68,0.35)' }]}>
         <View style={s.row}>
           <T kind="mono" style={{ color: colors.muted }}>
@@ -26,7 +27,7 @@ export function OrderCard({ order, onPress, taken }: { order: Order; onPress?: (
           </T>
         </View>
       </Card>
-    </Pressable>
+    </Tap>
   );
 }
 

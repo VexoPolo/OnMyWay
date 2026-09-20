@@ -1,12 +1,13 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { OtpInput } from '../../components/OtpInput';
 import { ReportSheet } from '../../components/ReportSheet';
 import { SlideToComplete } from '../../components/SlideToComplete';
 import { Screen } from '../../components/Screen';
+import { Tap } from '../../components/Tap';
 import { T } from '../../components/Text';
 import { Timeline } from '../../components/Timeline';
 import type { AppStackParams } from '../../navigation/types';
@@ -68,9 +69,9 @@ export function CourierJobScreen({ navigation, route }: Props) {
   return (
     <Screen scroll>
       <View style={s.topbar}>
-        <Pressable onPress={() => navigation.goBack()} style={s.back} accessibilityRole="button" accessibilityLabel="Back" hitSlop={8}>
+        <Tap onPress={() => navigation.goBack()} style={s.back} accessibilityRole="button" accessibilityLabel="Back" hitSlop={8}>
           <T style={{ fontSize: 18, lineHeight: 20 }}>‹</T>
-        </Pressable>
+        </Tap>
         <View style={s.chip}>
           <T kind="mono" style={{ fontSize: 10.5, color: colors.brandDark }}>
             {CHIP[order.state] ?? order.state}
@@ -92,9 +93,9 @@ export function CourierJobScreen({ navigation, route }: Props) {
             {POINTS.map((p) => {
               const on = p === point;
               return (
-                <Pressable key={p} onPress={() => setPoint(p)} style={[s.segBtn, on && s.segOn]}>
+                <Tap key={p} onPress={() => setPoint(p)} style={[s.segBtn, on && s.segOn]}>
                   <T style={[s.segText, on && { color: colors.onBrand, fontFamily: fonts.bodySemi }]}>{p}</T>
-                </Pressable>
+                </Tap>
               );
             })}
           </View>
@@ -179,11 +180,11 @@ export function CourierJobScreen({ navigation, route }: Props) {
         </>
       )}
       {mine && order.state !== 'DELIVERED' && order.state !== 'DISPUTED' && (
-        <Pressable onPress={() => setReporting(true)}>
+        <Tap onPress={() => setReporting(true)}>
           <T kind="mono" style={s.link}>
             Can't complete this?
           </T>
-        </Pressable>
+        </Tap>
       )}
       <ReportSheet
         open={reporting}

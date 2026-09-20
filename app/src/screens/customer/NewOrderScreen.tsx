@@ -1,10 +1,11 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Field } from '../../components/Field';
 import { Screen } from '../../components/Screen';
+import { Tap } from '../../components/Tap';
 import { T } from '../../components/Text';
 import type { AppStackParams } from '../../navigation/types';
 import { PICKUP_POINTS, estimateKm, type PickupPoint } from '../../services/mock';
@@ -58,9 +59,9 @@ export function NewOrderScreen({ navigation }: Props) {
   return (
     <Screen scroll>
       <View style={s.topbar}>
-        <Pressable onPress={() => navigation.goBack()} style={s.back} accessibilityRole="button" accessibilityLabel="Back" hitSlop={8}>
+        <Tap onPress={() => navigation.goBack()} style={s.back} accessibilityRole="button" accessibilityLabel="Back" hitSlop={8}>
           <T style={{ fontSize: 18, lineHeight: 20 }}>‹</T>
-        </Pressable>
+        </Tap>
         <View style={s.chip}>
           <T kind="mono" style={{ fontSize: 10.5, color: colors.brandDark }}>
             New order
@@ -137,9 +138,9 @@ function Seg({ options, value, onChange }: { options: string[]; value: string; o
       {options.map((o) => {
         const on = o === value;
         return (
-          <Pressable key={o} onPress={() => onChange(o)} style={[s.segBtn, on && s.segOn]}>
+          <Tap key={o} onPress={() => onChange(o)} style={[s.segBtn, on && s.segOn]}>
             <T style={[s.segText, on && { color: colors.onBrand, fontFamily: fonts.bodySemi }]}>{o}</T>
-          </Pressable>
+          </Tap>
         );
       })}
     </View>
