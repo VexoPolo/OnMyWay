@@ -4,3 +4,6 @@ dist/
 __pycache__/
 graphify-out/
 .claude/
+
+# brag video working files
+brag-output/

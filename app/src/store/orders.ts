@@ -33,11 +33,10 @@ const NEXT: Partial<Record<OrderState, OrderState>> = {
 
 // ---------------------------------------------------------------------------
 // Wire format: the public.orders table (the earlier web apps speak the same vocabulary).
-// Columns beyond his original ones come from web/supabase/001_onmyway_orders.sql.
-// Writes drop any column the live table doesn't have yet. Until that file is applied
-// the same fields also travel as JSON in `delivery_otp` (a column nobody uses), so
-// both phones still see courier, fare, pickup OTP, PIN expiry, rating and reports.
-// Real columns win over the sidecar once they exist.
+// Live columns we use: fare, pickup_otp, pin_expiry, rating, report (JSON text), rider_name,
+// rider_upi, completed_at. The few the table still lacks (rider_reg_no, rider_phone,
+// requester_reg_no, driver_phone, updated_at — see web/supabase/001_onmyway_orders.sql)
+// travel as JSON in `delivery_otp`, a column nobody uses. Real columns win over the sidecar.
 // ---------------------------------------------------------------------------
 type Row = Record<string, any>;
 const SIDECAR = 'delivery_otp';
@@ -100,10 +99,14 @@ function fromRow(r: Row): Order {
   const createdAt = Date.parse(r.created_at) || Date.now();
   const updatedAt = r.updated_at ? Date.parse(r.updated_at) : (x.up ?? createdAt);
   const courierRegNo = r.rider_reg_no ?? x.cr ?? undefined;
-  const pinExpiry = r.pin_expires_at ? Date.parse(r.pin_expires_at) : (x.px ?? updatedAt + PIN_TTL);
-  const report = r.report_reason
-    ? { by: r.report_by === 'courier' ? 'courier' : 'customer', reason: r.report_reason, note: r.report_note ?? undefined, at: r.reported_at ? Date.parse(r.reported_at) : updatedAt }
-    : x.rp ?? undefined;
+  const pinExpiry = r.pin_expiry ? Date.parse(r.pin_expiry) : (x.px ?? updatedAt + PIN_TTL);
+  let report: Order['report'] = x.rp ?? undefined;
+  if (typeof r.report === 'string' && r.report.startsWith('{')) {
+    try {
+      const j = JSON.parse(r.report);
+      if (j?.reason) report = { by: j.by === 'courier' ? 'courier' : 'customer', reason: String(j.reason), note: j.note || undefined, at: Number(j.at) || updatedAt };
+    } catch {}
+  }
   return {
     id: r.id,
     trackingId: r.tracking_id ?? undefined,
@@ -119,7 +122,7 @@ function fromRow(r: Row): Order {
     pickup,
     dropoff: block ? (/block/i.test(block) ? block : `${block} block`) : 'Your block',
     distanceKm,
-    fare: r.delivery_fee ?? x.fee ?? quoteFare(size, distanceKm),
+    fare: r.fare ?? x.fee ?? quoteFare(size, distanceKm),
     note: r.special_instructions || r.order_instructions || undefined,
     pickupOtp: r.pickup_otp ?? x.po ?? undefined,
     driverPhone: r.driver_phone ?? x.dp ?? undefined,
@@ -143,10 +146,10 @@ function toRow(o: Order): Row {
     hostel_delivery_block: o.dropoff.replace(/ block$/i, ''),
     special_instructions: o.note ?? '',
     delivery_status: TO_STATUS[o.state],
-    // --- added by 001_onmyway_orders.sql
-    requester_reg_no: o.customerRegNo,
-    delivery_fee: o.fare,
+    fare: o.fare,
     pickup_otp: o.pickupOtp ?? null,
+    // --- not in the live table yet (001_onmyway_orders.sql); dropped on write, kept in the sidecar
+    requester_reg_no: o.customerRegNo,
     driver_phone: o.driverPhone ?? null,
     updated_at: iso(o.updatedAt),
     [SIDECAR]: sidecarOf(o),
@@ -324,12 +327,12 @@ export const useOrders = create<OrdersState>()(
         const o = get().orders[orderId];
         const next = o && NEXT[o.state];
         if (!o || !next) return;
-        patch(orderId, { state: next }, { delivery_status: TO_STATUS[next] });
+        patch(orderId, { state: next }, { delivery_status: TO_STATUS[next], ...(next === 'DELIVERED' ? { completed_at: iso() } : {}) });
       },
       arrive: (orderId) => {
         const code = String(Math.floor(1000 + Math.random() * 9000));
         const expiresAt = now() + PIN_TTL;
-        patch(orderId, { state: 'ARRIVED', otp: { code, expiresAt } }, { delivery_status: 'reached', delivery_pin: code, pin_expires_at: iso(expiresAt) });
+        patch(orderId, { state: 'ARRIVED', otp: { code, expiresAt } }, { delivery_status: 'reached', delivery_pin: code, pin_expiry: iso(expiresAt) });
         return code;
       },
       confirmHandover: async (orderId, code) => {
@@ -359,12 +362,12 @@ export const useOrders = create<OrdersState>()(
       },
       report: (orderId, by, reason, note) => {
         const report = { by, reason, note: note || undefined, at: now() };
-        const remote = { report_by: by, report_reason: reason, report_note: note || null, reported_at: iso() };
+        const remote = { report: JSON.stringify(report) };
         if (by === 'courier') {
           patch(
             orderId,
             { report, courierRegNo: undefined, courierName: undefined, courierUpi: undefined, courierPhone: undefined, otp: undefined, state: 'ORDER_PLACED' },
-            { ...remote, delivery_status: 'available', rider_reg_no: null, rider_name: null, rider_upi: null, rider_phone: null, delivery_pin: null, pin_expires_at: null },
+            { ...remote, delivery_status: 'available', rider_reg_no: null, rider_name: null, rider_upi: null, rider_phone: null, delivery_pin: null, pin_expiry: null },
           );
         } else {
           patch(orderId, { report, state: 'DISPUTED' }, { ...remote, delivery_status: 'disputed' });
