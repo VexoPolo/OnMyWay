@@ -53,8 +53,11 @@ export function CourierJobScreen({ navigation, route }: Props) {
   const mine = order.courierRegNo === me.regNo;
   const first = order.customerName?.split(' ')[0] ?? 'the customer';
 
+  const [accepting, setAccepting] = useState(false);
   const onAccept = async () => {
+    setAccepting(true);
     const r = await accept(orderId, me.regNo, me.upi);
+    setAccepting(false);
     if (r === 'taken') setMsg('Someone else got there first. This job is taken.');
     else if (r === 'offline') setMsg("Can't reach the server — try again.");
   };
@@ -89,11 +92,11 @@ export function CourierJobScreen({ navigation, route }: Props) {
           </T>
 
           <T kind="eyebrow">Where are you?</T>
-          <View style={s.seg}>
+          <View style={s.seg} accessibilityRole="radiogroup">
             {POINTS.map((p) => {
               const on = p === point;
               return (
-                <Tap key={p} onPress={() => setPoint(p)} style={[s.segBtn, on && s.segOn]}>
+                <Tap key={p} onPress={() => setPoint(p)} style={[s.segBtn, on && s.segOn]} accessibilityRole="radio" accessibilityState={{ selected: on }}>
                   <T style={[s.segText, on && { color: colors.onBrand, fontFamily: fonts.bodySemi }]}>{p}</T>
                 </Tap>
               );
@@ -125,7 +128,7 @@ export function CourierJobScreen({ navigation, route }: Props) {
         </T>
       )}
 
-      {order.state === 'ORDER_PLACED' && <Button title={`Accept · ₹${order.fare}`} onPress={onAccept} />}
+      {order.state === 'ORDER_PLACED' && <Button title={`Accept · ₹${order.fare}`} onPress={onAccept} loading={accepting} />}
 
       {order.state === 'AGENT_ASSIGNED' && mine && (
         <>

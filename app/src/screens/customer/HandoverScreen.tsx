@@ -41,11 +41,11 @@ export function HandoverScreen({ navigation, route }: Props) {
   return (
     <Screen>
       <View style={s.top}>
-        <T kind="eyebrow">Courier is here</T>
+        <T kind="eyebrow">{order.courierName ? `${order.courierName} is at your door` : 'Your courier is at your door'}</T>
         <T kind="h1">Four digits</T>
-        <T kind="caption">Read this to the courier. It proves the parcel reached the right person.</T>
+        <T kind="caption">Read this to {order.courierName?.split(' ')[0] ?? 'the courier'}. It proves the parcel reached the right person.</T>
       </View>
-      <View style={s.code}>
+      <View style={s.code} accessible accessibilityLabel={`Your code is ${order.otp.code.split('').join(' ')}`}>
         {order.otp.code.split('').map((d, i) => (
           <View key={i} style={s.box}>
             <T style={s.digit}>{d}</T>

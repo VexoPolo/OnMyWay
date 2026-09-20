@@ -37,7 +37,7 @@ export function SearchingScreen({ navigation, route }: Props) {
         </T>
         <T kind="state">ORDER_PLACED</T>
       </View>
-      <Button title="Keep searching in the background" variant="ghost" onPress={() => navigation.popToTop()} />
+      <Button title="Go back — we'll tell you when someone's on it" variant="ghost" onPress={() => navigation.popToTop()} />
       <Button title="Cancel order" variant="ghost" onPress={() => cancel(orderId)} />
     </Screen>
   );

@@ -33,7 +33,7 @@ export function RoleScreen() {
         icon={<ParcelGlyph size={30} />}
         title="Get something delivered"
         body="Skip the walk to the gate — someone's already headed your way"
-        chip="Avg. wait ~20 min"
+        chip="₹20–30, paid at the door"
         glow={['rgba(10,10,10,0)', 'rgba(245,158,11,0.10)'] as const}
         glowStart={{ x: 0.5, y: 0.2 }}
         glowEnd={{ x: 0.5, y: 1 }}

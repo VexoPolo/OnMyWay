@@ -1,11 +1,10 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
 import { Linking, StyleSheet, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
-import { LiveMap } from '../../components/LiveMap';
 import { ReportSheet } from '../../components/ReportSheet';
+import { Screen } from '../../components/Screen';
 import { Tap } from '../../components/Tap';
 import { T } from '../../components/Text';
 import { Timeline } from '../../components/Timeline';
@@ -15,8 +14,13 @@ import { colors, fonts, radius, space } from '../../theme';
 
 type Props = NativeStackScreenProps<AppStackParams, 'Track'>;
 
-const PROGRESS: Record<string, number> = { AGENT_ASSIGNED: 0.05, PICKED_UP: 0.15, OUT_FOR_DELIVERY: 0.6, ARRIVED: 1 };
-const ETA: Record<string, string> = { AGENT_ASSIGNED: '8 min', PICKED_UP: '7 min', OUT_FOR_DELIVERY: '3 min', ARRIVED: 'Here' };
+// No GPS on campus: progress is what the courier tapped, said plainly.
+const NOW: Record<string, (name: string, pickup: string) => string> = {
+  AGENT_ASSIGNED: (n, p) => `${n} is heading to ${p}`,
+  PICKED_UP: (n) => `${n} has your parcel`,
+  OUT_FOR_DELIVERY: (n) => `${n} is on the way to your block`,
+  ARRIVED: (n) => `${n} is at your door`,
+};
 const LATE_AFTER_MS = 45 * 60_000; // no state change for this long -> nudge to report
 
 export function TrackScreen({ navigation, route }: Props) {
@@ -38,18 +42,17 @@ export function TrackScreen({ navigation, route }: Props) {
   const sinceMin = Math.round((Date.now() - order.updatedAt) / 60000);
   const late = Date.now() - order.updatedAt > LATE_AFTER_MS;
 
+  const first = order.courierName?.split(' ')[0] ?? 'Your courier';
+  const now = (NOW[order.state] ?? (() => 'Waiting for a courier'))(first, order.pickup);
+
   return (
-    <View style={s.root}>
-      <LiveMap pickup={order.pickup} dropoff={order.dropoff} progress={PROGRESS[order.state] ?? 0} />
-      <SafeAreaView edges={['top']} style={s.topOverlay} pointerEvents="box-none">
-        <View style={s.eta}>
-          <T kind="mono" style={{ color: colors.onBrand }}>
-            ETA {ETA[order.state] ?? '—'}
-          </T>
-        </View>
-      </SafeAreaView>
+    <Screen scroll>
+      <View style={s.head}>
+        <T kind="eyebrow">Order {order.trackingId ?? ''}</T>
+        <T kind="h1" style={{ textTransform: 'none', fontSize: 28, lineHeight: 32 }}>{now}</T>
+        <T kind="caption">Then four digits at your door — that's how you know it's yours.</T>
+      </View>
       <View style={s.sheet}>
-        <View style={s.grip} />
         {late && (
           <Tap onPress={() => setReporting(true)} style={s.banner}>
             <View style={s.bannerDot} />
@@ -94,7 +97,7 @@ export function TrackScreen({ navigation, route }: Props) {
               if (driverPhone !== null) setDriverPhone(orderId, driverPhone);
               setDriver(null);
             }}
-            placeholder="Add from the Amazon app"
+            placeholder="Add it later"
             placeholderTextColor={colors.muted}
             keyboardType="phone-pad"
             maxLength={15}
@@ -124,28 +127,16 @@ export function TrackScreen({ navigation, route }: Props) {
         }}
         onClose={() => setReporting(false)}
       />
-    </View>
+    </Screen>
   );
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.ground },
-  topOverlay: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center' },
-  eta: { marginTop: space.sm, backgroundColor: colors.brandA, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
-  sheet: {
-    backgroundColor: colors.ground,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    padding: space.md,
-    paddingBottom: space.lg,
-    gap: space.md,
-    borderTopWidth: 1,
-    borderColor: colors.line,
-  },
-  grip: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: colors.line },
+  head: { gap: 6, paddingTop: space.sm },
+  sheet: { gap: space.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   avatar: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.brandB, alignItems: 'center', justifyContent: 'center' },
-  card: { maxHeight: 260 },
+  card: {},
   banner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(245,158,11,0.10)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.35)', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 },
   bannerDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.brandB },
   link: { fontSize: 11, color: colors.muted, textAlign: 'center', textDecorationLine: 'underline' },

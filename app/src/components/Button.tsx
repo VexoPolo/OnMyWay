@@ -19,6 +19,9 @@ export function Button({ title, onPress, variant = 'primary', disabled, loading,
       <Pressable
         onPress={onPress}
         disabled={inactive}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !!inactive, busy: !!loading }}
+        accessibilityLabel={title}
         style={({ pressed }) => [s.wrap, style, pressed && s.pressed, inactive && s.dim]}
       >
         <LinearGradient colors={[...brandGradient]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.fill}>
@@ -31,6 +34,8 @@ export function Button({ title, onPress, variant = 'primary', disabled, loading,
     <Pressable
       onPress={onPress}
       disabled={inactive}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!inactive, busy: !!loading }}
       style={({ pressed }) => [
         s.wrap,
         s.fill,

@@ -43,7 +43,7 @@ export function ProfileScreen() {
           </T>
           <View style={s.verified}>
             <View style={s.tick} />
-            <T kind="mono" style={{ fontSize: 10.5, color: colors.brandDark }}>
+            <T kind="mono" style={{ fontSize: 11.5, color: colors.brandDark }}>
               Verified student
             </T>
           </View>
@@ -172,7 +172,7 @@ const s = StyleSheet.create({
   tile: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
   tileOff: { opacity: 0.45 },
   roleTitle: { fontFamily: fonts.displayBlack, fontSize: 15, letterSpacing: -0.2 },
-  roleTag: { fontSize: 9.5, color: colors.brandDark, letterSpacing: 1.2, marginTop: 4 },
+  roleTag: { fontSize: 11, color: colors.brandDark, letterSpacing: 1.2, marginTop: 4 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 11 },
   rowLine: { borderBottomWidth: 1, borderColor: colors.line },
   upiInput: { minWidth: 160, textAlign: 'right', color: colors.ink, fontFamily: fonts.mono, fontSize: 13.5, paddingVertical: 6 },

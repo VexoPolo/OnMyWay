@@ -134,11 +134,11 @@ export function NewOrderScreen({ navigation }: Props) {
 
 function Seg({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
   return (
-    <View style={s.seg}>
+    <View style={s.seg} accessibilityRole="radiogroup">
       {options.map((o) => {
         const on = o === value;
         return (
-          <Tap key={o} onPress={() => onChange(o)} style={[s.segBtn, on && s.segOn]}>
+          <Tap key={o} onPress={() => onChange(o)} style={[s.segBtn, on && s.segOn]} accessibilityRole="radio" accessibilityState={{ selected: on }}>
             <T style={[s.segText, on && { color: colors.onBrand, fontFamily: fonts.bodySemi }]}>{o}</T>
           </Tap>
         );

@@ -23,7 +23,7 @@ export function WelcomeScreen({ navigation }: Props) {
         <View style={s.top}>
           <Logo variant="mark" height={26} />
           <View style={s.chip}>
-            <T kind="mono" style={{ fontSize: 10.5, color: colors.brandDark }}>VIT VELLORE</T>
+            <T kind="mono" style={{ fontSize: 11.5, color: colors.brandDark }}>VIT VELLORE</T>
           </View>
         </View>
 
@@ -53,7 +53,7 @@ function Who({ tag, tagColor, title, body, style, right }: { tag: string; tagCol
   const align = right ? ('right' as const) : ('left' as const);
   return (
     <View style={[s.who, style]}>
-      <T kind="mono" style={{ fontSize: 10, color: tagColor, textAlign: align }}>{tag}</T>
+      <T kind="mono" style={{ fontSize: 11, color: tagColor, textAlign: align }}>{tag}</T>
       <T style={{ fontSize: 13, fontFamily: fonts.bodySemi, textAlign: align }}>{title}</T>
       <T kind="caption" style={{ fontSize: 11, lineHeight: 15, textAlign: align }}>{body}</T>
     </View>

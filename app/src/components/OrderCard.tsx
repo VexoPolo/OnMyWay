@@ -20,7 +20,7 @@ export function OrderCard({ order, onPress, taken }: { order: Order; onPress?: (
         <Route pickup={order.pickup} dropoff={order.dropoff} />
         <View style={s.row}>
           <T kind="caption">
-            {order.state === 'DISPUTED' && order.report ? `${order.report.reason} · ` : ''}{SIZE_LABEL[order.size]} · {order.distanceKm} km{order.rating ? ` · ★ ${order.rating}` : ''}
+            {order.state === 'DISPUTED' && order.report ? `${order.report.reason} · ` : ''}{SIZE_LABEL[order.size]} · {order.pickup}{order.rating ? ` · ★ ${order.rating}` : ''}
           </T>
           <T kind="subtitle" style={{ color: colors.brandDark }}>
             ₹{order.fare}

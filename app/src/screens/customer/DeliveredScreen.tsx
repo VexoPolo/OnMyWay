@@ -56,21 +56,23 @@ export function DeliveredScreen({ navigation, route }: Props) {
 
   return (
     <Screen scroll>
-      <View style={[s.center, { flex: 0, paddingTop: space.lg }]}>
+      <View style={s.head}>
         <View style={s.check}>
           <T style={s.tick}>✓</T>
         </View>
         <T kind="h1" style={{ textAlign: 'center' }}>
           {done ? 'Delivered' : 'Handed over'}
         </T>
-        <T kind="state">{done ? `DELIVERED · ${mins} min door to door` : 'Pay your courier'}</T>
+        <T kind="caption" style={{ textAlign: 'center' }}>
+          {done ? `${mins} min door to door · paid at the door` : `Pay ${first} now — cash, or their UPI`}
+        </T>
       </View>
 
       <Card style={s.pay}>
-        <T kind="eyebrow">Pay {first}</T>
+        <T kind="eyebrow">{done ? `Paid to ${first}` : `Pay ${first}`}</T>
         <T style={s.amount}>₹{order.fare}</T>
-        <T kind="caption">cash, or UPI</T>
-        {order.courierUpi ? (
+        <T kind="caption">{done ? 'settled outside the app' : 'cash, or UPI'}</T>
+        {done ? null : order.courierUpi ? (
           <View style={s.upi}>
             <T kind="mono" style={{ fontSize: 15, fontFamily: fonts.monoMedium }}>
               {order.courierUpi}
@@ -93,7 +95,7 @@ export function DeliveredScreen({ navigation, route }: Props) {
         {[1, 2, 3, 4, 5].map((n) => {
           const on = (order.rating ?? 0) >= n;
           return (
-            <Tap key={n} onPress={() => rate(orderId, n)} style={[s.star, on && s.starOn]} accessibilityRole="button" accessibilityLabel={`Rate ${n} star${n > 1 ? 's' : ''}`}>
+            <Tap key={n} onPress={() => rate(orderId, n)} style={[s.star, on && s.starOn]} accessibilityRole="button" accessibilityLabel={`Rate ${n} star${n > 1 ? 's' : ''}`} accessibilityState={{ selected: on }}>
               <T style={{ fontSize: 18, color: on ? colors.onBrand : colors.line }}>★</T>
             </Tap>
           );
@@ -137,6 +139,7 @@ function Row({ k, v }: { k: string; v: string }) {
 
 const s = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.sm },
+  head: { alignItems: 'center', gap: space.sm, paddingTop: space.lg },
   check: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.brandB, alignItems: 'center', justifyContent: 'center', marginBottom: space.sm },
   tick: { fontSize: 36, color: colors.onBrand, fontWeight: '700' },
   pay: { alignItems: 'center', gap: 4, paddingVertical: 22 },
