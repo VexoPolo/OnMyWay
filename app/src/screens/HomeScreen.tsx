@@ -14,8 +14,8 @@ import { Tap } from '../components/Tap';
 import { T } from '../components/Text';
 import type { AppStackParams } from '../navigation/types';
 import { useAuth } from '../store/auth';
-import { useOrders } from '../store/orders';
-import { brandGradient, colors, fonts, space } from '../theme';
+import { MAX_BATCH, useOrders } from '../store/orders';
+import { brandGradient, colors, fonts, radius, space } from '../theme';
 
 const ACTIVE = new Set(['ORDER_PLACED', 'AGENT_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'ARRIVED', 'CONFIRMATION_RECEIVED', 'DISPUTED']);
 
@@ -68,9 +68,12 @@ function CourierHome() {
   const setOnline = useAuth((s) => s.setOnline);
   const orders = useOrders((s) => s.orders);
   const accept = useOrders((s) => s.accept);
+  const acceptMany = useOrders((s) => s.acceptMany);
   const [loc, setLoc] = useState<PickupPoint | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [nudge, setNudge] = useState<string>();
+  const [picked, setPicked] = useState<string[]>([]); // batch selection, max MAX_BATCH
+  const [taking, setTaking] = useState(false);
 
   const all = Object.values(orders).sort((a, b) => b.createdAt - a.createdAt);
   // ponytail: own orders are listed too so one phone can play both roles; the backend will exclude them
@@ -78,6 +81,39 @@ function CourierHome() {
   const delivered = all.filter((o) => o.courierRegNo === user.regNo && o.state === 'DELIVERED' && Date.now() - o.updatedAt < 7 * 86_400_000);
   const earned = delivered.reduce((sum, o) => sum + o.fare, 0);
   const here = loc ? all.filter((o) => o.pickup === loc && (o.state === 'ORDER_PLACED' || (o.courierRegNo === user.regNo && ACTIVE.has(o.state)))) : [];
+  // Already carrying something? The run screen is the way back into it.
+  const carrying = all.filter((o) => o.courierRegNo === user.regNo && ACTIVE.has(o.state) && o.state !== 'ORDER_PLACED');
+  const chosen = picked.filter((id) => orders[id]?.state === 'ORDER_PLACED');
+  const chosenFare = chosen.reduce((sum, id) => sum + (orders[id]?.fare ?? 0), 0);
+  const roomLeft = MAX_BATCH - carrying.length;
+
+  const toggle = (id: string) => {
+    setPicked((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= roomLeft) {
+        setNudge(roomLeft <= 0 ? `Finish your run first — ${MAX_BATCH} parcels is the limit.` : `${MAX_BATCH} parcels per run. Drop one to add another.`);
+        setTimeout(() => setNudge(undefined), 2500);
+        return prev;
+      }
+      return [...prev, id];
+    });
+  };
+
+  const takeBatch = async () => {
+    setTaking(true);
+    const { won, lost } = await acceptMany(chosen, user.regNo, user.upi);
+    setTaking(false);
+    setPicked([]);
+    if (won.length === 0) {
+      setNudge('Someone else got there first.');
+      return setTimeout(() => setNudge(undefined), 2500);
+    }
+    if (lost > 0) {
+      setNudge(`${lost} ${lost === 1 ? 'parcel was' : 'parcels were'} taken by someone else.`);
+      setTimeout(() => setNudge(undefined), 3000);
+    }
+    nav.navigate('Run');
+  };
 
   const pick = (p: PickupPoint) => {
     setLoc(p);
@@ -137,9 +173,21 @@ function CourierHome() {
           : 'Nothing earned yet this week — every parcel is ₹20–30 in hand.'}
       </T>
 
+      {carrying.length > 0 && (
+        <Tap onPress={() => nav.navigate('Run')} style={s.runCard} accessibilityLabel="Open your run">
+          <View style={{ flex: 1, gap: 2 }}>
+            <T style={{ fontSize: 14, fontFamily: fonts.bodySemi }}>
+              Carrying {carrying.length} {carrying.length === 1 ? 'parcel' : 'parcels'}
+            </T>
+            <T kind="caption" style={{ fontSize: 11.5 }}>{carrying.map((o) => o.dropoff).join(' · ')}</T>
+          </View>
+          <T kind="mono" style={{ fontSize: 11, color: colors.brandDark }}>OPEN RUN ›</T>
+        </Tap>
+      )}
+
       {loc && (
         <View style={s.section}>
-          <T kind="eyebrow">Assigned to you here</T>
+          <T kind="eyebrow">{chosen.length > 0 ? 'Tick the ones you can carry' : 'Assigned to you here'}</T>
           {here.length === 0 && <T kind="caption">Nothing waiting at {loc} right now.</T>}
           {here.map((o) => {
             const isOpen = openId === o.id;
@@ -147,6 +195,17 @@ function CourierHome() {
             return (
               <View key={o.id} style={[s.item, isOpen && s.itemOpen]}>
                 <Tap onPress={() => setOpenId(isOpen ? null : o.id)} style={s.itemHead} accessibilityLabel={`${o.trackingId ?? 'Parcel'} to ${o.dropoff}`} accessibilityState={{ expanded: isOpen }}>
+                  {o.state === 'ORDER_PLACED' && (
+                    <Tap
+                      onPress={() => toggle(o.id)}
+                      style={[s.check, picked.includes(o.id) && s.checkOn]}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: picked.includes(o.id) }}
+                      accessibilityLabel={`Add ${o.dropoff} to this run`}
+                    >
+                      {picked.includes(o.id) && <T style={{ fontSize: 12, color: colors.onBrand }}>✓</T>}
+                    </Tap>
+                  )}
                   <View style={{ gap: 3, flex: 1 }}>
                     <T kind="mono" style={{ fontSize: 12.5, fontFamily: fonts.monoMedium }}>{o.trackingId ?? `Parcel for ${o.customerName?.split(' ')[0] ?? o.customerRegNo}`}</T>
                     <T kind="caption" style={{ fontSize: 11.5 }}>→ {o.dropoff}</T>
@@ -173,20 +232,39 @@ function CourierHome() {
       )}
     </Screen>
 
+    {/* batch bar: only while parcels are selected */}
+    {chosen.length > 0 && (
+      <View style={s.batchBar}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <T style={{ fontSize: 14, fontFamily: fonts.bodySemi }}>
+            {chosen.length} {chosen.length === 1 ? 'parcel' : 'parcels'} · ₹{chosenFare}
+          </T>
+          <T kind="caption" style={{ fontSize: 11.5 }}>
+            {roomLeft - chosen.length > 0 ? `room for ${roomLeft - chosen.length} more` : 'full run'}
+          </T>
+        </View>
+        <Button title="Take them →" onPress={takeBatch} loading={taking} style={{ flex: 1 }} />
+      </View>
+    )}
+
     {/* floating accept: jumps to the newest open order */}
     {!!nudge && (
       <View style={s.nudge}>
         <T kind="caption" style={{ color: colors.ink }}>{nudge}</T>
       </View>
     )}
-    <Pressable onPress={grab} style={({ pressed }) => [s.fab, pressed && { transform: [{ scale: 0.94 }] }]} accessibilityLabel="Accept an order">
+    <Pressable
+      onPress={() => (carrying.length > 0 ? nav.navigate('Run') : grab())}
+      style={({ pressed }) => [s.fab, pressed && { transform: [{ scale: 0.94 }] }]}
+      accessibilityLabel={carrying.length > 0 ? 'Open your run' : 'Accept an order'}
+    >
       <LinearGradient colors={[...brandGradient]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.fabFill}>
         <View style={s.plusH} />
         <View style={s.plusV} />
       </LinearGradient>
-      {open.length > 0 && (
+      {(carrying.length > 0 || open.length > 0) && (
         <View style={s.badge}>
-          <T kind="mono" style={{ fontSize: 10, color: colors.ink }}>{open.length}</T>
+          <T kind="mono" style={{ fontSize: 10, color: colors.ink }}>{carrying.length > 0 ? carrying.length : open.length}</T>
         </View>
       )}
     </Pressable>
@@ -228,6 +306,10 @@ const s = StyleSheet.create({
   h1: { fontSize: 26, lineHeight: 29, textTransform: 'none', letterSpacing: -0.5 },
   sub: { fontSize: 13.5, lineHeight: 20, marginTop: -space.sm },
   places: { flexDirection: 'row', gap: 10 },
+  check: { width: 26, height: 26, borderRadius: 8, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.ground, alignItems: 'center', justifyContent: 'center' },
+  checkOn: { backgroundColor: colors.brandB, borderColor: colors.brandB },
+  batchBar: { position: 'absolute', left: 16, right: 16, bottom: 22, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: radius.card, paddingVertical: 12, paddingHorizontal: 14 },
+  runCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'rgba(252,211,77,0.07)', borderWidth: 1, borderColor: 'rgba(252,211,77,0.28)', borderRadius: radius.card, paddingVertical: 12, paddingHorizontal: 14, marginTop: space.xs },
   place: { flex: 1, minHeight: 112, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 16, padding: 14, gap: 6, justifyContent: 'flex-end' },
   placeOn: { backgroundColor: colors.brandB, borderColor: colors.brandB },
   placeText: { fontSize: 15, fontFamily: fonts.bodySemi, color: colors.ink },

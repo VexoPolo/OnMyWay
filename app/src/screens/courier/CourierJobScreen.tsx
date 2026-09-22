@@ -22,6 +22,9 @@ const POINTS = ['Main Gate', 'Amazon Pick Up Point'] as const;
 const SIZE_LABEL = { S: 'Regular', M: 'Regular', L: 'Large', XL: 'Large' } as const;
 // ponytail: driver details come from the delivery platform; mocked until that integration exists
 
+/** States that mean the courier still has the parcel in hand. */
+const CARRYING = new Set(['AGENT_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'ARRIVED', 'CONFIRMATION_RECEIVED']);
+
 const CHIP: Record<string, string> = {
   ORDER_PLACED: 'Open order',
   AGENT_ASSIGNED: 'Order accepted',
@@ -37,7 +40,8 @@ const CHIP: Record<string, string> = {
 export function CourierJobScreen({ navigation, route }: Props) {
   const { orderId, point: fromHub } = route.params;
   const me = useAuth((s) => s.user)!;
-  const order = useOrders((s) => s.orders[orderId]);
+  const all = useOrders((s) => s.orders);
+  const order = all[orderId];
   const accept = useOrders((s) => s.accept);
   const advance = useOrders((s) => s.advance);
   const arrive = useOrders((s) => s.arrive);
@@ -51,6 +55,10 @@ export function CourierJobScreen({ navigation, route }: Props) {
 
   if (!order) return null;
   const mine = order.courierRegNo === me.regNo;
+  // Other parcels still on this run — drives "next stop" instead of a dead end.
+  const rest = Object.values(all)
+    .filter((o) => o.id !== orderId && o.courierRegNo === me.regNo && CARRYING.has(o.state))
+    .sort((a, b) => a.createdAt - b.createdAt);
   const first = order.customerName?.split(' ')[0] ?? 'the customer';
 
   const [accepting, setAccepting] = useState(false);
@@ -179,7 +187,14 @@ export function CourierJobScreen({ navigation, route }: Props) {
             <T style={s.amount}>₹{order.fare}</T>
             <T kind="state">DELIVERED · order closed</T>
           </Card>
-          <Button title="Done" onPress={() => navigation.popToTop()} />
+          {rest.length > 0 ? (
+            <>
+              <Button title={`Next stop: ${rest[0].dropoff} →`} onPress={() => navigation.replace('CourierJob', { orderId: rest[0].id, point: rest[0].pickup })} />
+              <Button title={`See the run (${rest.length} left)`} variant="ghost" onPress={() => navigation.navigate('Run')} />
+            </>
+          ) : (
+            <Button title="Done" onPress={() => navigation.popToTop()} />
+          )}
         </>
       )}
       {mine && order.state !== 'DELIVERED' && order.state !== 'DISPUTED' && (

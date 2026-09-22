@@ -11,6 +11,8 @@ import type { Order, OrderState, PackageSize } from './types';
 const SIZE_BASE: Record<PackageSize, number> = { S: 20, M: 20, L: 30, XL: 30 };
 const PER_KM = 0;
 const PIN_TTL = 5 * 60_000;
+/** One courier carries at most this many parcels per run. */
+export const MAX_BATCH = 4;
 
 /** Fare is quoted before the order is placed and goes to the courier. */
 export function quoteFare(size: PackageSize, distanceKm: number): number {
@@ -187,6 +189,8 @@ interface OrdersState {
   place: (draft: Omit<Order, 'id' | 'state' | 'createdAt' | 'updatedAt' | 'fare'>) => Order;
   /** First-come-first-served: one conditional UPDATE on the server, so two phones can't both win. */
   accept: (orderId: string, courierRegNo: string, courierUpi?: string) => Promise<'ok' | 'taken' | 'missing' | 'offline'>;
+  /** Take several open orders in one go (max MAX_BATCH). Returns the ids actually won. */
+  acceptMany: (orderIds: string[], courierRegNo: string, courierUpi?: string) => Promise<{ won: string[]; lost: number }>;
   advance: (orderId: string) => void;
   arrive: (orderId: string) => string; // generates the handover PIN, returns it (the customer reads it off the row)
   confirmHandover: (orderId: string, code: string) => Promise<'ok' | 'wrong' | 'expired'>;
@@ -322,6 +326,18 @@ export const useOrders = create<OrdersState>()(
         set((s) => ({ orders: { ...s.orders, [orderId]: taken } }));
         applyRows(data);
         return 'ok';
+      },
+      acceptMany: async (orderIds, courierRegNo, courierUpi) => {
+        // Sequential on purpose: each accept is its own conditional write, so a race
+        // costs one order, not the run.
+        const won: string[] = [];
+        let lost = 0;
+        for (const id of orderIds.slice(0, MAX_BATCH)) {
+          const r = await get().accept(id, courierRegNo, courierUpi);
+          if (r === 'ok') won.push(id);
+          else lost++;
+        }
+        return { won, lost };
       },
       advance: (orderId) => {
         const o = get().orders[orderId];

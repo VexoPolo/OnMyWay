@@ -12,6 +12,7 @@ import { RoleScreen } from '../screens/auth/RoleScreen';
 import { SignInScreen } from '../screens/auth/SignInScreen';
 import { WelcomeScreen } from '../screens/auth/WelcomeScreen';
 import { CourierJobScreen } from '../screens/courier/CourierJobScreen';
+import { RunScreen } from '../screens/courier/RunScreen';
 import { DeliveredScreen } from '../screens/customer/DeliveredScreen';
 import { HandoverScreen } from '../screens/customer/HandoverScreen';
 import { NewOrderScreen } from '../screens/customer/NewOrderScreen';
@@ -90,6 +91,7 @@ export function RootNavigator() {
           <App.Screen name="Handover" component={HandoverScreen} options={{ gestureEnabled: false }} />
           <App.Screen name="Delivered" component={DeliveredScreen} />
           <App.Screen name="CourierJob" component={CourierJobScreen} />
+          <App.Screen name="Run" component={RunScreen} />
         </App.Navigator>
       )}
     </NavigationContainer>
