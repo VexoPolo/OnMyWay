@@ -46,6 +46,7 @@ function toUser(p: api.Profile, email: string | undefined, prev: User | null): U
 }
 
 async function saveRemote(p: Profile) {
+  if (p.idCard) await api.uploadIdCard(p.idCard.uri, p.idCard.mimeType);
   return api.saveProfile({ regNo: p.regNo.trim().toUpperCase(), name: p.name, phone: p.phone, block: p.block, upi: p.upi });
 }
 
@@ -79,7 +80,10 @@ export const useAuth = create<AuthState>()(
       verifyCode: async (code) => {
         const { pendingEmail, pendingProfile } = get();
         if (!pendingEmail) throw new ApiError('code_invalid', 'no pending email');
-        const session = await auth.verifyEmailCode(pendingEmail, code);
+        // a retry after a failed save: the code was already used, the session is what counts
+        const current = await auth.getSession();
+        const session =
+          current?.user.email?.toLowerCase() === pendingEmail ? current : await auth.verifyEmailCode(pendingEmail, code);
         const email = session.user.email ?? pendingEmail;
         // New student: save what they typed on Register. Returning student: load what's on file.
         const profile = pendingProfile ? await saveRemote(pendingProfile) : await api.getMyProfile();

@@ -326,3 +326,17 @@ export async function setDriverPhone(orderId: string, phone: string): Promise<bo
 export async function reportOrder(orderId: string, reason: string, note?: string): Promise<boolean> {
   return call(db.rpc('report_order', { p_order: orderId, p_reason: reason, p_note: note ?? '' }));
 }
+
+// ---- ID card --------------------------------------------------------------------------------
+
+/**
+ * Upload (or replace) the signed-in student's ID card photo. Private bucket, file named by
+ * their auth id; only they can read it back (supabase/migrations/0010_id_card_storage.sql).
+ */
+export async function uploadIdCard(localUri: string, mimeType = 'image/jpeg'): Promise<void> {
+  const uid = (await db.auth.getSession()).data.session?.user.id;
+  if (!uid) throw new ApiError('not_signed_in', 'not signed in');
+  const body = await (await fetch(localUri)).arrayBuffer();
+  const { error } = await db.storage.from('id-cards').upload(uid, body, { contentType: mimeType, upsert: true });
+  if (error) throw toApiError(error);
+}

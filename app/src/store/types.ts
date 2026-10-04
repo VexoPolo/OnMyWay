@@ -23,6 +23,7 @@ export interface Profile {
   phone: string;
   block: string; // e.g. MH-F
   upi?: string; // personal UPI id — couriers get paid to it, outside the app
+  idCard?: { uri: string; mimeType?: string }; // local photo from Register; uploaded once signed in
 }
 
 export interface User extends Partial<Omit<Profile, 'regNo' | 'name'>> {

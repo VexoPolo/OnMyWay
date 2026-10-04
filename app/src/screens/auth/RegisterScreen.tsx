@@ -6,6 +6,7 @@ import { Field } from '../../components/Field';
 import { Screen } from '../../components/Screen';
 import { Tap } from '../../components/Tap';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { T } from '../../components/Text';
 import type { AuthStackParams } from '../../navigation/types';
 import { ERROR_COPY, toApiError } from '../../services/backend/errors';
@@ -26,7 +27,7 @@ export function RegisterScreen({ navigation, route }: Props) {
   const [email, setEmail] = useState(route.params?.email ?? '');
   const [phone, setPhone] = useState('');
   const [block, setBlock] = useState<string | null>(null);
-  const [idAttached, setIdAttached] = useState(false);
+  const [idCard, setIdCard] = useState<{ uri: string; mimeType?: string }>();
   const [sheet, setSheet] = useState(false);
   const [busy, setBusy] = useState(false);
   const [regError, setRegError] = useState<string>();
@@ -38,14 +39,20 @@ export function RegisterScreen({ navigation, route }: Props) {
     /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim()) && // which domains is the server's call (app_config)
     phone.replace(/\D/g, '').length >= 10 &&
     !!block &&
-    idAttached;
+    !!idCard;
+
+  const pickId = async () => {
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.6 });
+    const a = res.canceled ? undefined : res.assets[0];
+    if (a) setIdCard({ uri: a.uri, mimeType: a.mimeType ?? undefined });
+  };
 
   const submit = async () => {
     setBusy(true);
     setRegError(undefined);
     setEmailError(undefined);
     try {
-      const next = await register({ name: name.trim(), regNo, email: email.trim().toLowerCase(), phone: phone.trim(), block: block! });
+      const next = await register({ name: name.trim(), regNo, email: email.trim().toLowerCase(), phone: phone.trim(), block: block!, idCard });
       if (next === 'code_sent') navigation.navigate('Otp'); // 'signed_in': the root navigator moves on by itself
     } catch (e) {
       const { code } = toApiError(e);
@@ -116,12 +123,11 @@ export function RegisterScreen({ navigation, route }: Props) {
 
       <View style={{ gap: 6 }}>
         <T kind="eyebrow">ID card</T>
-        {/* ponytail: no image picker yet — tap marks it attached; add expo-image-picker when real upload is wired */}
-        <Tap onPress={() => setIdAttached((v) => !v)} style={[s.upload, idAttached && s.uploadOn]}>
+        <Tap onPress={pickId} style={[s.upload, idCard && s.uploadOn]}>
           <View style={s.uploadIcon}>
-            <Ionicons name={idAttached ? 'checkmark' : 'camera-outline'} size={20} color={idAttached ? colors.brandDark : colors.ink} />
+            <Ionicons name={idCard ? 'checkmark' : 'camera-outline'} size={20} color={idCard ? colors.brandDark : colors.ink} />
           </View>
-          <T style={{ fontSize: 13.5, fontFamily: fonts.bodyMedium }}>{idAttached ? 'ID attached' : 'Scan or upload your ID'}</T>
+          <T style={{ fontSize: 13.5, fontFamily: fonts.bodyMedium }}>{idCard ? 'ID attached — tap to change' : 'Upload a photo of your ID'}</T>
           <T kind="caption" style={{ fontSize: 11.5 }}>
             Clear photo, all corners visible
           </T>
