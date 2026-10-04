@@ -12,12 +12,15 @@ interface Props {
   reasons: string[];
   submitLabel: string;
   footnote: string;
+  /** Hide the free-text note (e.g. when the sheet is only a confirmation). Default true. */
+  showNote?: boolean;
+  /** With no reasons the sheet is a plain confirm: the button is enabled and reason is ''. */
   onSubmit: (reason: string, note: string) => void;
   onClose: () => void;
 }
 
 /** Bottom sheet for "something wrong?" on either side of a delivery. */
-export function ReportSheet({ open, title, intro, reasons, submitLabel, footnote, onSubmit, onClose }: Props) {
+export function ReportSheet({ open, title, intro, reasons, submitLabel, footnote, showNote = true, onSubmit, onClose }: Props) {
   const [reason, setReason] = useState<string | null>(null);
   const [note, setNote] = useState('');
   return (
@@ -51,6 +54,7 @@ export function ReportSheet({ open, title, intro, reasons, submitLabel, footnote
             );
           })}
         </View>
+        {showNote && (
         <TextInput
           value={note}
           onChangeText={setNote}
@@ -59,13 +63,14 @@ export function ReportSheet({ open, title, intro, reasons, submitLabel, footnote
           multiline
           style={s.note}
         />
+        )}
         <View style={{ marginTop: 'auto', gap: 8 }}>
           <Button
             title={submitLabel}
             variant="danger"
-            disabled={!reason}
+            disabled={reasons.length > 0 && !reason}
             onPress={() => {
-              onSubmit(reason!, note.trim());
+              onSubmit(reason ?? '', note.trim());
               setReason(null);
               setNote('');
             }}

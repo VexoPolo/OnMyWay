@@ -263,7 +263,8 @@ interface OrdersState {
   /** Customer: a fresh 5-minute PIN (also clears a lock-out). */
   refreshPin: (orderId: string) => void;
   confirmHandover: (orderId: string, code: string) => Promise<HandoverOutcome>;
-  cancel: (orderId: string) => void;
+  /** Customer: only until pickup. Resolves true once the server has cancelled it. */
+  cancel: (orderId: string) => Promise<boolean>;
   rate: (orderId: string, rating: number) => void;
   /** Customer adds the platform driver's number once the platform shares it. */
   setDriverPhone: (orderId: string, phone: string) => void;
@@ -373,7 +374,18 @@ export const useOrders = create<OrdersState>()(
         }
       },
 
-      cancel: (orderId) => fire(orderId, { state: 'CANCELLED' }, () => api.cancelOrder(orderId)),
+      // waits for the server: if the courier picked up meanwhile, nothing changes on screen
+      cancel: async (orderId) => {
+        try {
+          const ok = await write(orderId, null, () => api.cancelOrder(orderId));
+          const cur = get().orders[orderId];
+          if (ok && cur) put({ ...cur, state: 'CANCELLED', updatedAt: now() });
+          return ok;
+        } catch (e) {
+          console.warn('cancel', toApiError(e).code);
+          return false;
+        }
+      },
       rate: (orderId, rating) => fire(orderId, { rating }, () => api.rateOrder(orderId, rating)),
 
       setDriverPhone: (orderId, phone) => {

@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -52,6 +52,11 @@ export function CourierJobScreen({ navigation, route }: Props) {
   const [point, setPoint] = useState<(typeof POINTS)[number]>(fromHub === 'Amazon Pick Up Point' ? 'Amazon Pick Up Point' : 'Main Gate');
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState<string>();
+
+  // The customer cancelled before pickup: back to Home, where the open list is.
+  useEffect(() => {
+    if (order?.state === 'CANCELLED') navigation.popToTop();
+  }, [order?.state, navigation]);
 
   if (!order) return null;
   const mine = order.courierId === me.id;

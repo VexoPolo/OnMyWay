@@ -27,9 +27,11 @@ export function TrackScreen({ navigation, route }: Props) {
   const { orderId } = route.params;
   const order = useOrders((s) => s.orders[orderId]);
   const report = useOrders((s) => s.report);
+  const cancel = useOrders((s) => s.cancel);
   const setDriverPhone = useOrders((s) => s.setDriverPhone);
   const [driverPhone, setDriver] = useState<string | null>(null); // null = not editing, show stored value
   const [reporting, setReporting] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (!order) return;
@@ -108,6 +110,8 @@ export function TrackScreen({ navigation, route }: Props) {
           <Timeline state={order.state} />
         </Card>
         <Button title="Back to home" variant="ghost" onPress={() => navigation.popToTop()} />
+        {/* the server allows cancelling only until pickup (status 'allocated') */}
+        {order.state === 'AGENT_ASSIGNED' && <Button title="Cancel order" variant="ghost" onPress={() => setCancelling(true)} />}
         <Tap onPress={() => setReporting(true)}>
           <T kind="mono" style={s.link}>
             Something wrong?
@@ -126,6 +130,20 @@ export function TrackScreen({ navigation, route }: Props) {
           setReporting(false);
         }}
         onClose={() => setReporting(false)}
+      />
+      <ReportSheet
+        open={cancelling}
+        title="Cancel this order?"
+        intro={`${first} hasn't picked it up yet, so you can still cancel. They'll see it straight away.`}
+        reasons={[]}
+        showNote={false}
+        submitLabel="Cancel order"
+        footnote="Only possible until the courier picks up the parcel"
+        onSubmit={() => {
+          setCancelling(false);
+          void cancel(orderId); // on success the CANCELLED state sends us Home (effect above)
+        }}
+        onClose={() => setCancelling(false)}
       />
     </Screen>
   );
