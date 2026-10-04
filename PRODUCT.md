@@ -37,7 +37,7 @@ Campus peer-to-peer parcel delivery: match a parcel waiting at the gate with a s
 
 ## Capabilities and Constraints
 
-- Backend: Supabase `orders` and `users` tables (teammate-owned schema), realtime sync between phones, open RLS; no auth server — sign-in is reg number + a password that is only length-checked today.
+- Backend: Supabase (`profiles`, `orders`, `order_secrets`, `order_events`, `reports`), realtime sync between phones, RLS on every table and all writes through database functions; sign-in is a 6-digit email code via Supabase Auth, limited to the domains in `app_config`.
 - Pricing is by parcel class only (Regular ₹20, Large ₹30); no distance pricing.
 - Progress is courier-tapped states; there is no GPS or live map. The track screen's map is schematic.
 - Handover PIN: 4 digits, generated when the courier arrives, 5-minute expiry, verified by the database.
@@ -54,10 +54,10 @@ Campus peer-to-peer parcel delivery: match a parcel waiting at the gate with a s
 
 ## Evidence on Hand
 
-- Working product: `app/` (Expo SDK 57), live at https://onmyway-khaki.vercel.app, synced to Supabase project `old-project-removed`.
+- Working product: `app/` (Expo SDK 57), live at https://onmyway-khaki.vercel.app, synced to Supabase project `fikinghjzmnxgmvnibyk`.
 - Screen mockups: `docs/onmyway-screens.html` and `docs/screens/*.html` (25 frames); Figma file `ZsVq8Kr8G24urdLTLnrjdo`.
 - Media: `docs/media/onmyway-splash.mp4` (splash animation), `brag-output/brag.mp4` (21 s launch video).
-- Schema notes: `web/supabase/001_onmyway_orders.sql`.
+- Schema: `supabase/migrations/` (tests in `supabase/tests/`).
 - **No** real usage numbers, testimonials, courier counts or delivery times exist. Figures in the UI ("3 couriers online", "avg ₹25", "~20 min wait") are placeholders and must not be presented as data.
 
 ## Product Principles
