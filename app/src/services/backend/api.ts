@@ -255,12 +255,11 @@ export async function quoteFare(size: PackageSize): Promise<number> {
   return call(db.rpc('quote_fare', { p_size: size }));
 }
 
-/** Fare, id, platform and gate reference are all set by the server. */
+/** Fare, id, platform, gate reference and drop-off (your profile's block) are all set by the server. */
 export async function placeOrder(o: {
   pickup: PickupPoint;
   trackingId?: string;
   size: PackageSize;
-  dropoff?: string;
   note?: string;
   pickupOtp?: string;
   driverPhone?: string;
@@ -270,7 +269,6 @@ export async function placeOrder(o: {
       p_pickup_point: o.pickup,
       p_tracking_id: o.trackingId ?? '',
       p_size: o.size,
-      p_drop_block: o.dropoff?.replace(/ block$/i, '') ?? '',
       p_note: o.note ?? '',
       p_pickup_otp: o.pickupOtp ?? '',
       p_driver_phone: o.driverPhone ?? '',

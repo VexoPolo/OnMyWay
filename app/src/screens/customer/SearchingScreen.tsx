@@ -11,8 +11,8 @@ import { colors, space } from '../../theme';
 type Props = NativeStackScreenProps<AppStackParams, 'Searching'>;
 
 /**
- * Broadcast to everyone online. In the demo, if nobody on this device accepts
- * within a few seconds, a mock courier does — so the customer flow always moves.
+ * The order is in the open pool for every courier. Moves on by itself when the server says a
+ * courier took it (realtime + poll in store/orders.ts), or back home if it was cancelled.
  */
 export function SearchingScreen({ navigation, route }: Props) {
   const { orderId } = route.params;

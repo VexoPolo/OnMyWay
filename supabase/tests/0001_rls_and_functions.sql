@@ -28,6 +28,9 @@ begin
   --                  as admin -> perform set_config('role','postgres',true)
 
   ---------------------------------------------------------------- sign-up gate
+  -- start from the demo setting whatever the live value is (gmail may be on for testing);
+  -- the final RAISE rolls this back too, so the live config is left untouched
+  update public.app_config set value = '["vitstudent.ac.in"]' where key = 'allowed_email_domains';
   begin
     insert into auth.users (id, email, aud, role) values (g, 'someone@gmail.com', 'authenticated', 'authenticated');
     err := 'inserted';
@@ -109,18 +112,25 @@ begin
   out := out || format(E'%s  12 a student sees only their own profile row: %s row(s)\n', case when ok then 'PASS' else 'FAIL' end, n);
 
   perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
-  begin perform public.place_order('Main Gate', null, 'M', 'MH-D'); err := 'placed';
+  begin perform public.place_order('Main Gate', null, 'M'); err := 'placed';
   exception when others then err := sqlerrm; end;
   ok := err = 'profile_required';
   out := out || format(E'%s  13 no profile -> cannot place orders: %s\n', case when ok then 'PASS' else 'FAIL' end, err);
 
   ---------------------------------------------------------------- place: server-set fare
   perform set_config('role', 'authenticated', true), set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
-  o1 := public.place_order('Amazon Pick Up Point', 'TBA123456789', 'M', '', 'Leave at the desk', '4821', '+91 90000 11111');
-  o2 := public.place_order('Main Gate', null, 'XL', 'MH-A');
+  o1 := public.place_order('Amazon Pick Up Point', 'TBA123456789', 'M', 'Leave at the desk', '4821', '+91 90000 11111');
+  o2 := public.place_order('Main Gate', null, 'XL');
   ok := o1.fare = 20 and o2.fare = 30 and o1.platform = 'Amazon' and o1.drop_block = 'MH-A' and o2.tracking_id like 'OMW-%';
-  out := out || format(E'%s  14 fares set by server (M=%s, XL=%s), platform=%s, block defaulted, gate ref %s\n',
+  out := out || format(E'%s  14 fares set by server (M=%s, XL=%s), platform=%s, drop-off = profile block, gate ref %s\n',
                        case when ok then 'PASS' else 'FAIL' end, o1.fare, o2.fare, o1.platform, o2.tracking_id);
+
+  -- the old 7-argument form (with a client-chosen drop-off block) must not exist any more
+  begin perform public.place_order('Main Gate', null, 'S', 'LH-Z', '', null, null); err := 'placed';
+  exception when others then err := sqlerrm; end;
+  perform set_config('role', 'authenticated', true);
+  ok := err like 'function public.place_order%does not exist%';
+  out := out || format(E'%s  14b client cannot choose the drop-off block: %s\n', case when ok then 'PASS' else 'FAIL' end, left(err, 60));
 
   begin update public.orders set fare = 0 where id = o1.id; err := 'updated'; exception when others then err := sqlerrm; end;
   ok := err like 'permission denied%';
@@ -236,9 +246,9 @@ begin
   ---------------------------------------------------------------- caps
   perform set_config('role', 'authenticated', true), set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
   for i in 1..4 loop
-    ids := ids || (public.place_order('Main Gate', null, 'S', 'MH-A')).id;
+    ids := ids || (public.place_order('Main Gate', null, 'S')).id;
   end loop;                                                    -- A now has 5 open (o2 + 4)
-  begin perform public.place_order('Main Gate', null, 'S', 'MH-A'); err := 'placed'; exception when others then err := sqlerrm; end;
+  begin perform public.place_order('Main Gate', null, 'S'); err := 'placed'; exception when others then err := sqlerrm; end;
   ok := err = 'too_many_open_orders';
   out := out || format(E'%s  37 6th open order refused: %s\n', case when ok then 'PASS' else 'FAIL' end, err);
 

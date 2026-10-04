@@ -87,7 +87,6 @@ export type Database = {
           p_pickup_point: string;
           p_tracking_id: string;
           p_size: string;
-          p_drop_block: string;
           p_note?: string;
           p_pickup_otp?: string;
           p_driver_phone?: string;
