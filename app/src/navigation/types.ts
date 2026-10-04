@@ -2,8 +2,10 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 
 export type AuthStackParams = {
   Welcome: undefined;
-  Register: undefined;
+  /** email: prefilled when a signed-in student still has to register */
+  Register: { email?: string } | undefined;
   SignIn: undefined;
+  Otp: undefined;
   Role: undefined;
 };
 

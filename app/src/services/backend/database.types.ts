@@ -63,8 +63,8 @@ type ReportRow = {
   status: string;
 };
 
-// Clients can't write any table directly (RLS + revoked grants), so Insert/Update are `never`.
-type ReadOnly<R> = { Row: R; Insert: never; Update: never; Relationships: [] };
+// Clients can't write any table directly (RLS + revoked grants); Insert/Update exist only to satisfy supabase-js.
+type ReadOnly<R> = { Row: R; Insert: Partial<R>; Update: Partial<R>; Relationships: [] };
 
 export type Database = {
   __InternalSupabase: { PostgrestVersion: '14.18' };

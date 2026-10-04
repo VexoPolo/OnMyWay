@@ -2,395 +2,408 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState } from 'react-native';
-import { estimateKm } from '../services/mock';
-import { supabase } from '../services/supabase';
+import * as api from '../services/backend/api';
+import { toApiError } from '../services/backend/errors';
+import { estimateKm, type PickupPoint } from '../services/mock';
 import { useAuth } from './auth';
 import type { Order, OrderState, PackageSize } from './types';
 
-// Priced by parcel class only: Regular (S/M) ₹20, Large (L/XL) ₹30.
-const SIZE_BASE: Record<PackageSize, number> = { S: 20, M: 20, L: 30, XL: 30 };
-const PER_KM = 0;
-const PIN_TTL = 5 * 60_000;
-/** One courier carries at most this many parcels per run. */
+/** One courier carries at most this many parcels per run (the server enforces it too). */
 export const MAX_BATCH = 4;
 
-/** Fare is quoted before the order is placed and goes to the courier. */
-export function quoteFare(size: PackageSize, distanceKm: number): number {
-  return Math.round((SIZE_BASE[size] + PER_KM * distanceKm) / 5) * 5;
-}
-
-export function platformOf(trackingId?: string) {
-  const t = trackingId ?? '';
-  return t.startsWith('TBA') ? 'Amazon' : t.startsWith('FLP') ? 'Flipkart' : t.startsWith('MYN') ? 'Myntra' : 'Courier';
-}
-
-const NEXT: Partial<Record<OrderState, OrderState>> = {
-  ORDER_PLACED: 'AGENT_ASSIGNED',
-  AGENT_ASSIGNED: 'PICKED_UP',
-  PICKED_UP: 'OUT_FOR_DELIVERY',
-  OUT_FOR_DELIVERY: 'ARRIVED',
-  ARRIVED: 'CONFIRMATION_RECEIVED', // handover verified — courier still has to collect the fare
-  CONFIRMATION_RECEIVED: 'DELIVERED', // slide-to-complete
-};
+/** Orders that are still moving — the ones whose private details we keep fresh. */
+const LIVE = new Set<OrderState>(['ORDER_PLACED', 'AGENT_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'ARRIVED', 'CONFIRMATION_RECEIVED']);
+/** States where get_order_private answers the courier. */
+const COURIER_SEES = new Set<OrderState>(['AGENT_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'ARRIVED', 'CONFIRMATION_RECEIVED']);
 
 // ---------------------------------------------------------------------------
-// Wire format: the public.orders table (the earlier web apps speak the same vocabulary).
-// Live columns we use: fare, pickup_otp, pin_expiry, rating, report (JSON text), rider_name,
-// rider_upi, completed_at. The few the table still lacks (rider_reg_no, rider_phone,
-// requester_reg_no, driver_phone, updated_at — see web/supabase/001_onmyway_orders.sql)
-// travel as JSON in `delivery_otp`, a column nobody uses. Real columns win over the sidecar.
+// server record -> app Order. Everything except the display-only fields comes from the row;
+// those (names, phones, codes) are kept from the previous copy and refreshed by loadPrivate().
 // ---------------------------------------------------------------------------
-type Row = Record<string, any>;
-const SIDECAR = 'delivery_otp';
 
-const TO_STATUS: Record<OrderState, string> = {
-  ORDER_PLACED: 'available',
-  AGENT_ASSIGNED: 'allocated',
-  PICKED_UP: 'picked_up',
-  OUT_FOR_DELIVERY: 'on_the_way',
-  ARRIVED: 'reached',
-  CONFIRMATION_RECEIVED: 'handed_over',
-  PAID: 'handed_over',
-  DELIVERED: 'delivered',
-  CANCELLED: 'cancelled',
-  DISPUTED: 'disputed',
-};
-const FROM_STATUS: Record<string, OrderState> = {
-  available: 'ORDER_PLACED',
-  pending: 'ORDER_PLACED',
-  PENDING: 'ORDER_PLACED',
-  allocated: 'AGENT_ASSIGNED',
-  picked_up: 'PICKED_UP',
-  on_the_way: 'OUT_FOR_DELIVERY',
-  reached: 'ARRIVED',
-  handed_over: 'CONFIRMATION_RECEIVED',
-  delivered: 'DELIVERED',
-  cancelled: 'CANCELLED',
-  disputed: 'DISPUTED',
-};
-const TO_SIZE: Record<PackageSize, string> = { S: 'Small', M: 'Regular', L: 'Large', XL: 'Extra large' };
-function fromSize(v: unknown): PackageSize {
-  const t = String(v ?? '').toLowerCase();
-  return t.startsWith('s') ? 'S' : t.startsWith('l') ? 'L' : t.startsWith('x') || t.startsWith('e') ? 'XL' : 'M';
-}
-// The web forms also know 'Amazon Kiosk' / 'SJ Gate'; the app has two points.
-const fromPoint = (v: unknown) => (/amazon/i.test(String(v ?? '')) ? 'Amazon Pick Up Point' : 'Main Gate');
-const iso = (t = Date.now()) => new Date(t).toISOString();
-const uuid = () =>
-  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    return (c === 'x' ? r : (r & 3) | 8).toString(16);
-  });
+type Display = Pick<
+  Order,
+  | 'customerName'
+  | 'customerPhone'
+  | 'customerRegNo'
+  | 'courierName'
+  | 'courierPhone'
+  | 'courierRegNo'
+  | 'courierUpi'
+  | 'pickupOtp'
+  | 'driverPhone'
+  | 'otp'
+  | 'pinAttemptsLeft'
+  | 'report'
+>;
 
-function sidecarOf(o: Order): string {
-  return JSON.stringify({
-    rr: o.customerRegNo, cr: o.courierRegNo, cn: o.courierName, cu: o.courierUpi, cp: o.courierPhone, fee: o.fare,
-    po: o.pickupOtp, dp: o.driverPhone, px: o.otp?.expiresAt, up: o.updatedAt, rt: o.rating, rp: o.report,
-  });
-}
-
-function fromRow(r: Row): Order {
-  let x: Row = {};
-  try {
-    if (typeof r[SIDECAR] === 'string' && r[SIDECAR].startsWith('{')) x = JSON.parse(r[SIDECAR]);
-  } catch {}
-  const pickup = fromPoint(r.pickup_point);
-  const block: string = r.hostel_delivery_block ?? '';
-  const size = fromSize(r.order_size);
-  const distanceKm = estimateKm(pickup, block);
-  const createdAt = Date.parse(r.created_at) || Date.now();
-  const updatedAt = r.updated_at ? Date.parse(r.updated_at) : (x.up ?? createdAt);
-  const courierRegNo = r.rider_reg_no ?? x.cr ?? undefined;
-  const pinExpiry = r.pin_expiry ? Date.parse(r.pin_expiry) : (x.px ?? updatedAt + PIN_TTL);
-  let report: Order['report'] = x.rp ?? undefined;
-  if (typeof r.report === 'string' && r.report.startsWith('{')) {
-    try {
-      const j = JSON.parse(r.report);
-      if (j?.reason) report = { by: j.by === 'courier' ? 'courier' : 'customer', reason: String(j.reason), note: j.note || undefined, at: Number(j.at) || updatedAt };
-    } catch {}
-  }
+function displayOf(prev: Order | undefined, courierId: string | undefined): Display {
+  if (!prev) return {};
+  const sameCourier = prev.courierId === courierId;
   return {
+    customerName: prev.customerName,
+    customerPhone: prev.customerPhone,
+    customerRegNo: prev.customerRegNo,
+    pickupOtp: prev.pickupOtp,
+    driverPhone: prev.driverPhone,
+    report: prev.report,
+    // a different (or no) courier now: don't show the old one's details or PIN
+    ...(sameCourier
+      ? { courierName: prev.courierName, courierPhone: prev.courierPhone, courierRegNo: prev.courierRegNo, courierUpi: prev.courierUpi, otp: prev.otp, pinAttemptsLeft: prev.pinAttemptsLeft }
+      : {}),
+  };
+}
+
+function toAppOrder(r: api.OrderRecord, prev?: Order): Order {
+  const block = r.dropoff;
+  return {
+    ...displayOf(prev, r.courierId),
     id: r.id,
-    trackingId: r.tracking_id ?? undefined,
-    platform: platformOf(r.tracking_id),
-    customerRegNo: r.requester_reg_no ?? x.rr ?? r.requester_phone ?? '',
-    customerName: r.recipient_name ?? undefined,
-    customerPhone: r.requester_phone ?? undefined,
-    courierRegNo,
-    courierName: r.rider_name ?? (courierRegNo ? x.cn : undefined) ?? undefined,
-    courierUpi: r.rider_upi ?? (courierRegNo ? x.cu : undefined) ?? undefined,
-    courierPhone: r.rider_phone ?? (courierRegNo ? x.cp : undefined) ?? undefined,
-    size,
-    pickup,
+    customerId: r.customerId,
+    courierId: r.courierId,
+    size: r.size,
+    pickup: r.pickup,
     dropoff: block ? (/block/i.test(block) ? block : `${block} block`) : 'Your block',
-    distanceKm,
-    fare: r.fare ?? x.fee ?? quoteFare(size, distanceKm),
-    note: r.special_instructions || r.order_instructions || undefined,
-    pickupOtp: r.pickup_otp ?? x.po ?? undefined,
-    driverPhone: r.driver_phone ?? x.dp ?? undefined,
-    state: FROM_STATUS[r.delivery_status] ?? 'ORDER_PLACED',
-    createdAt,
-    updatedAt,
-    otp: r.delivery_pin ? { code: String(r.delivery_pin), expiresAt: pinExpiry } : undefined,
-    rating: r.rating ?? x.rt ?? undefined,
-    report,
+    distanceKm: estimateKm(r.pickup, block),
+    fare: r.fare,
+    note: r.note,
+    trackingId: r.trackingId,
+    platform: r.platform,
+    state: r.state,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+    pinExpiresAt: r.pinExpiresAt,
+    rating: r.rating,
   };
 }
 
-function toRow(o: Order): Row {
-  return {
-    id: o.id,
-    tracking_id: o.trackingId ?? null,
-    pickup_point: o.pickup,
-    order_size: TO_SIZE[o.size],
-    recipient_name: o.customerName ?? '',
-    requester_phone: o.customerPhone ?? '',
-    hostel_delivery_block: o.dropoff.replace(/ block$/i, ''),
-    special_instructions: o.note ?? '',
-    delivery_status: TO_STATUS[o.state],
-    fare: o.fare,
-    pickup_otp: o.pickupOtp ?? null,
-    // --- not in the live table yet (001_onmyway_orders.sql); dropped on write, kept in the sidecar
-    requester_reg_no: o.customerRegNo,
-    driver_phone: o.driverPhone ?? null,
-    updated_at: iso(o.updatedAt),
-    [SIDECAR]: sidecarOf(o),
-  };
+const now = () => Date.now();
+const me = () => useAuth.getState().user;
+
+// A full fetch is thrown away if a write started before it (seq) or is still in flight when it
+// returns (inflight) — otherwise it could undo an optimistic change the server hasn't made yet.
+let seq = 0;
+let inflight = 0;
+/** order id -> the updatedAt we last fetched private details for */
+const privateAt: Record<string, number> = {};
+const privatePending = new Set<string>();
+
+function put(o: Order) {
+  useOrders.setState((s) => ({ orders: { ...s.orders, [o.id]: o } }));
 }
 
-function merge(prev: Order | undefined, next: Order): Order {
-  if (!prev) return next;
-  return { ...next, otp: next.otp && prev.otp?.code === next.otp.code ? prev.otp : next.otp };
+function applyRecords(records: api.OrderRecord[], replace: boolean) {
+  useOrders.setState((s) => {
+    const orders: Record<string, Order> = replace ? {} : { ...s.orders };
+    for (const r of records) orders[r.id] = toAppOrder(r, s.orders[r.id]);
+    return { orders };
+  });
+  void loadPrivate();
 }
 
-const MISSING_COL = /Could not find the '(\w+)' column/;
-type Res = { data: Row[] | null; error: { message: string } | null };
-/** Runs a write; if PostgREST rejects a column the live table lacks, retries without it. */
-async function tolerant(run: (payload: Row) => PromiseLike<Res>, payload: Row): Promise<Res> {
-  inflight++;
+/**
+ * Names, phones, pickup code, PIN — only for orders I'm on, and only when the order changed
+ * since we last asked. Customers also get their own report on disputed orders.
+ */
+async function loadPrivate() {
+  const u = me();
+  if (!u) return;
+  const due = Object.values(useOrders.getState().orders).filter((o) => {
+    if (privatePending.has(o.id) || privateAt[o.id] === o.updatedAt) return false;
+    if (o.customerId === u.id) return LIVE.has(o.state) || !o.courierName || (o.state === 'DISPUTED' && !o.report);
+    return o.courierId === u.id && COURIER_SEES.has(o.state);
+  });
+  await Promise.all(
+    due.map(async (o) => {
+      privatePending.add(o.id);
+      try {
+        const [p, report] = await Promise.all([
+          api.getOrderPrivate(o.id),
+          o.customerId === u.id && o.state === 'DISPUTED' ? api.getMyReport(o.id) : Promise.resolve(undefined),
+        ]);
+        privateAt[o.id] = o.updatedAt;
+        const cur = useOrders.getState().orders[o.id];
+        if (!cur) return;
+        const next: Order = { ...cur, report: report ?? cur.report };
+        if (p) {
+          next.pickupOtp = p.pickupOtp;
+          next.driverPhone = p.driverPhone;
+          next.pinAttemptsLeft = p.pinAttemptsLeft;
+          if (p.myRole === 'customer') {
+            next.customerName = u.name;
+            next.customerPhone = u.phone;
+            next.customerRegNo = u.regNo;
+            next.otp = p.pin;
+            next.courierName = p.other?.name;
+            next.courierRegNo = p.other?.regNo;
+            next.courierPhone = p.other?.phone;
+            next.courierUpi = p.other?.upi;
+          } else {
+            next.courierName = u.name;
+            next.courierPhone = u.phone;
+            next.courierRegNo = u.regNo;
+            next.courierUpi = u.upi;
+            next.customerName = p.other?.name;
+            next.customerRegNo = p.other?.regNo;
+            next.customerPhone = p.other?.phone;
+            next.otp = undefined; // the courier never holds the PIN
+          }
+        }
+        put(next);
+      } catch (e) {
+        console.warn('get_order_private', toApiError(e).code);
+      } finally {
+        privatePending.delete(o.id);
+      }
+    }),
+  );
+}
+
+/** Pull the last week of everything RLS lets me see. Replaces the cache wholesale. */
+export async function sync() {
+  if (!me()) return;
+  const at = seq;
   try {
-    for (let i = 0; i < 16; i++) {
-      const res = await run(payload);
-      const col = res.error && MISSING_COL.exec(res.error.message)?.[1];
-      if (!col) return res;
-      payload = { ...payload };
-      delete payload[col];
-    }
-    return { data: null, error: { message: 'too many unknown columns' } };
+    const records = await api.listOrders(7);
+    if (at !== seq || inflight > 0) return;
+    applyRecords(records, true);
+  } catch (e) {
+    console.warn('sync', toApiError(e).code);
+  }
+}
+
+/**
+ * Run a server action. `local` is applied immediately (optimistic); whatever happens, we
+ * re-sync afterwards so the screen ends up showing what the server actually did.
+ */
+async function write<T>(orderId: string | null, local: Partial<Order> | null, run: () => Promise<T>): Promise<T> {
+  seq++;
+  inflight++;
+  if (orderId && local) {
+    const o = useOrders.getState().orders[orderId];
+    if (o) put({ ...o, ...local, updatedAt: now() });
+  }
+  try {
+    return await run();
   } finally {
     inflight--;
+    if (orderId) delete privateAt[orderId];
+    void sync();
   }
 }
 
+/** Same, for taps that don't wait on the answer: failures are logged and the re-sync fixes the UI. */
+function fire(orderId: string, local: Partial<Order> | null, run: () => Promise<unknown>) {
+  write(orderId, local, run).catch((e) => console.warn('order action', toApiError(e).code));
+}
+
+/** Live feed: initial pull, realtime rows, and a poll as a safety net. Returns a stop fn. */
+export function startSync() {
+  void sync();
+  const stop = api.subscribeOrders((r) => {
+    if (inflight > 0) return; // a write is mid-flight; its own re-sync will bring this in
+    applyRecords([r], false);
+  });
+  // realtime can't tell us when an order LEAVES our view (e.g. someone else took it), so poll
+  const timer = setInterval(() => AppState.currentState === 'active' && void sync(), 4000);
+  const sub = AppState.addEventListener('change', (st) => st === 'active' && void sync());
+  return () => {
+    stop();
+    clearInterval(timer);
+    sub.remove();
+  };
+}
+
 // ---------------------------------------------------------------------------
+
+export type AcceptOutcome = api.AcceptResult | 'offline';
+
+/** What to tell a courier when an accept doesn't go through. */
+export const ACCEPT_COPY: Record<Exclude<AcceptOutcome, 'ok'>, string> = {
+  taken: 'Someone else got there first.',
+  limit: `You're carrying ${MAX_BATCH} parcels, the most for one run. Deliver one first.`,
+  own: "That's your own order. Another courier has to take it.",
+  missing: 'This order was cancelled.',
+  offline: "Can't reach the server — try again.",
+};
+export type HandoverOutcome = api.VerifyResult | 'offline';
+
+/** What the courier sees when the customer's code doesn't go through. */
+export const HANDOVER_COPY: Record<Exclude<HandoverOutcome, 'ok'>, string> = {
+  wrong: 'Wrong code. Ask them to read it again.',
+  expired: 'Code expired. Ask the customer for a fresh one.',
+  locked: '5 wrong tries, so the code is locked. Ask the customer to tap “Get a fresh code”.',
+  offline: "Can't reach the server — try again.",
+};
+
+export interface NewOrderInput {
+  size: PackageSize;
+  pickup: PickupPoint;
+  trackingId?: string;
+  note?: string;
+  pickupOtp?: string;
+  driverPhone?: string;
+}
 
 interface OrdersState {
   orders: Record<string, Order>;
-  place: (draft: Omit<Order, 'id' | 'state' | 'createdAt' | 'updatedAt' | 'fare'>) => Order;
-  /** First-come-first-served: one conditional UPDATE on the server, so two phones can't both win. */
-  accept: (orderId: string, courierRegNo: string, courierUpi?: string) => Promise<'ok' | 'taken' | 'missing' | 'offline'>;
+  /** Server price per size, from quote_fare. Missing until loaded. */
+  fares: Partial<Record<PackageSize, number>>;
+  loadFares: () => Promise<void>;
+  /** The server sets id, fare, platform and drop-off block. Throws ApiError. */
+  place: (input: NewOrderInput) => Promise<Order>;
+  /** First-come-first-served on the server: two phones can't both win. */
+  accept: (orderId: string) => Promise<AcceptOutcome>;
   /** Take several open orders in one go (max MAX_BATCH). Returns the ids actually won. */
-  acceptMany: (orderIds: string[], courierRegNo: string, courierUpi?: string) => Promise<{ won: string[]; lost: number }>;
+  acceptMany: (orderIds: string[]) => Promise<{ won: string[]; lost: number; limit: boolean }>;
+  /** Courier's next step: picked up -> on my way, or slide-to-complete after the handover. */
   advance: (orderId: string) => void;
-  arrive: (orderId: string) => string; // generates the handover PIN, returns it (the customer reads it off the row)
-  confirmHandover: (orderId: string, code: string) => Promise<'ok' | 'wrong' | 'expired'>;
+  /** Courier is at the door. The server makes the PIN; only the customer can read it. */
+  arrive: (orderId: string) => void;
+  /** Customer: a fresh 5-minute PIN (also clears a lock-out). */
+  refreshPin: (orderId: string) => void;
+  confirmHandover: (orderId: string, code: string) => Promise<HandoverOutcome>;
   cancel: (orderId: string) => void;
   rate: (orderId: string, rating: number) => void;
   /** Customer adds the platform driver's number once the platform shares it. */
   setDriverPhone: (orderId: string, phone: string) => void;
-  /** Customer report flags the order DISPUTED. Courier report releases it back to the pool. */
-  report: (orderId: string, by: 'customer' | 'courier', reason: string, note?: string) => void;
+  /** Customer report -> DISPUTED. Courier report -> back to the pool. The server decides which. */
+  report: (orderId: string, reason: string, note?: string) => void;
   reset: () => void;
-}
-
-const now = () => Date.now();
-// A full fetch is thrown away if a write started before it (seq) or is still in flight when it
-// returns (inflight) — otherwise it could wipe an order the server hasn't stored yet.
-let seq = 0;
-let inflight = 0;
-
-function applyRows(rows: Row[]) {
-  useOrders.setState((s) => {
-    const orders = { ...s.orders };
-    for (const r of rows) orders[r.id] = merge(orders[r.id], fromRow(r));
-    return { orders };
-  });
-}
-
-/** Pull the last week. Replaces the cache wholesale so rows deleted on the server disappear too. */
-export async function sync() {
-  const at = seq;
-  const { data, error } = await supabase
-    .from('orders')
-    .select('*')
-    .gte('created_at', iso(now() - 7 * 86_400_000))
-    .order('created_at', { ascending: false })
-    .limit(300);
-  if (error || !data || at !== seq || inflight > 0) return;
-  useOrders.setState((s) => {
-    const orders: Record<string, Order> = {};
-    for (const r of data) orders[r.id] = merge(s.orders[r.id], fromRow(r));
-    return { orders };
-  });
-}
-
-/** Optimistic local change + the matching server write. Any failure re-syncs from the server. */
-function patch(orderId: string, local: Partial<Order>, remote: Row) {
-  seq++;
-  useOrders.setState((s) => {
-    const o = s.orders[orderId];
-    return o ? { orders: { ...s.orders, [orderId]: { ...o, ...local, updatedAt: now() } } } : {};
-  });
-  const o = useOrders.getState().orders[orderId];
-  if (!o) return;
-  tolerant((p) => supabase.from('orders').update(p).eq('id', orderId).select(), { ...remote, updated_at: iso(), [SIDECAR]: sidecarOf(o) })
-    .then(({ data, error }) => (error || !data?.length ? sync() : applyRows(data)))
-    .catch(sync);
-}
-
-/** Live feed: initial pull, realtime rows as they change, and a slow poll as a safety net. Returns a stop fn. */
-export function startSync() {
-  sync();
-  const ch = supabase
-    .channel('orders-live')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (p) => {
-      if (p.eventType === 'DELETE') {
-        const id = (p.old as Row).id;
-        useOrders.setState((s) => {
-          const { [id]: _gone, ...rest } = s.orders;
-          return { orders: rest };
-        });
-      } else applyRows([p.new as Row]);
-    })
-    .subscribe();
-  const timer = setInterval(() => AppState.currentState === 'active' && sync(), 4000);
-  const sub = AppState.addEventListener('change', (st) => st === 'active' && sync());
-  return () => {
-    supabase.removeChannel(ch);
-    clearInterval(timer);
-    sub.remove();
-  };
 }
 
 export const useOrders = create<OrdersState>()(
   persist(
     (set, get) => ({
       orders: {},
-      place: (draft) => {
+      fares: {},
+
+      loadFares: async () => {
+        const sizes: PackageSize[] = ['S', 'M', 'L', 'XL'];
+        try {
+          const quotes = await Promise.all(sizes.map((sz) => api.quoteFare(sz)));
+          set({ fares: Object.fromEntries(sizes.map((sz, i) => [sz, quotes[i]])) });
+        } catch (e) {
+          console.warn('quote_fare', toApiError(e).code);
+        }
+      },
+
+      place: async (input) => {
+        const rec = await write(null, null, () =>
+          api.placeOrder({
+            pickup: input.pickup,
+            trackingId: input.trackingId,
+            size: input.size,
+            note: input.note,
+            pickupOtp: input.pickupOtp,
+            driverPhone: input.driverPhone,
+          }),
+        );
+        const u = me();
+        // we typed these in, so show them right away instead of waiting for get_order_private
         const order: Order = {
-          ...draft,
-          // tracking_id is NOT NULL in the table; a gate pickup without a platform ID gets an OMW reference instead
-          trackingId: draft.trackingId ?? 'OMW-' + Math.floor(100000 + Math.random() * 900000),
-          id: uuid(),
-          fare: quoteFare(draft.size, draft.distanceKm),
-          state: 'ORDER_PLACED',
-          createdAt: now(),
-          updatedAt: now(),
+          ...toAppOrder(rec),
+          customerName: u?.name,
+          customerPhone: u?.phone,
+          customerRegNo: u?.regNo,
+          pickupOtp: input.pickupOtp,
+          driverPhone: input.driverPhone,
         };
-        seq++;
-        set((s) => ({ orders: { ...s.orders, [order.id]: order } }));
-        tolerant((p) => supabase.from('orders').insert(p).select(), toRow(order))
-          .then(({ data, error }) => {
-            if (error) {
-              console.warn('place failed', error.message);
-              set((s) => {
-                const { [order.id]: _gone, ...rest } = s.orders;
-                return { orders: rest };
-              });
-              return;
-            }
-            if (data?.length) applyRows(data);
-          })
-          .catch((e) => console.warn('place failed', e));
+        put(order);
         return order;
       },
-      accept: async (orderId, courierRegNo, courierUpi) => {
+
+      accept: async (orderId) => {
         const o = get().orders[orderId];
         if (!o) return 'missing';
         if (o.state !== 'ORDER_PLACED') return 'taken';
-        const me = useAuth.getState().user;
-        const courierName = me?.name;
-        const courierPhone = me?.phone;
-        seq++;
-        // The conditional write: only succeeds if still unassigned.
-        const taken: Order = { ...o, courierRegNo, courierName, courierUpi, courierPhone, state: 'AGENT_ASSIGNED', updatedAt: now() };
-        const { data, error } = await tolerant(
-          (p) => supabase.from('orders').update(p).eq('id', orderId).eq('delivery_status', 'available').select(),
-          { delivery_status: 'allocated', rider_reg_no: courierRegNo, rider_name: courierName ?? null, rider_upi: courierUpi ?? null, rider_phone: courierPhone ?? null, updated_at: iso(), [SIDECAR]: sidecarOf(taken) },
-        );
-        if (error) return 'offline';
-        if (!data?.length) {
-          sync();
-          return 'taken';
+        try {
+          const r = await write(orderId, null, () => api.acceptOrder(orderId));
+          if (r === 'ok') {
+            const cur = get().orders[orderId] ?? o;
+            put({ ...cur, courierId: me()?.id, state: 'AGENT_ASSIGNED', updatedAt: now() });
+          }
+          return r;
+        } catch {
+          return 'offline';
         }
-        set((s) => ({ orders: { ...s.orders, [orderId]: taken } }));
-        applyRows(data);
-        return 'ok';
       },
-      acceptMany: async (orderIds, courierRegNo, courierUpi) => {
-        // Sequential on purpose: each accept is its own conditional write, so a race
+
+      acceptMany: async (orderIds) => {
+        // Sequential on purpose: each accept is its own first-tap-wins call, so a race
         // costs one order, not the run.
         const won: string[] = [];
         let lost = 0;
+        let limit = false;
         for (const id of orderIds.slice(0, MAX_BATCH)) {
-          const r = await get().accept(id, courierRegNo, courierUpi);
+          const r = await get().accept(id);
           if (r === 'ok') won.push(id);
-          else lost++;
+          else if (r === 'limit') {
+            limit = true;
+            break;
+          } else lost++;
         }
-        return { won, lost };
+        return { won, lost, limit };
       },
+
       advance: (orderId) => {
         const o = get().orders[orderId];
-        const next = o && NEXT[o.state];
-        if (!o || !next) return;
-        patch(orderId, { state: next }, { delivery_status: TO_STATUS[next], ...(next === 'DELIVERED' ? { completed_at: iso() } : {}) });
+        if (!o) return;
+        if (o.state === 'AGENT_ASSIGNED') fire(orderId, { state: 'PICKED_UP' }, () => api.advanceOrder(orderId, 'PICKED_UP'));
+        else if (o.state === 'PICKED_UP') fire(orderId, { state: 'OUT_FOR_DELIVERY' }, () => api.advanceOrder(orderId, 'OUT_FOR_DELIVERY'));
+        else if (o.state === 'CONFIRMATION_RECEIVED') fire(orderId, { state: 'DELIVERED' }, () => api.completeOrder(orderId));
       },
-      arrive: (orderId) => {
-        const code = String(Math.floor(1000 + Math.random() * 9000));
-        const expiresAt = now() + PIN_TTL;
-        patch(orderId, { state: 'ARRIVED', otp: { code, expiresAt } }, { delivery_status: 'reached', delivery_pin: code, pin_expiry: iso(expiresAt) });
-        return code;
-      },
+
+      arrive: (orderId) => fire(orderId, { state: 'ARRIVED' }, () => api.arriveOrder(orderId)),
+
+      // the old code stays on screen until get_order_private brings the new one
+      refreshPin: (orderId) => fire(orderId, null, () => api.refreshPin(orderId)),
+
       confirmHandover: async (orderId, code) => {
-        const o = get().orders[orderId];
-        if (!o?.otp) return 'wrong';
-        if (now() > o.otp.expiresAt) return 'expired';
-        seq++;
-        // Verified by the database: the row only changes if the PIN on it matches.
-        const { data, error } = await tolerant(
-          (p) => supabase.from('orders').update(p).eq('id', orderId).eq('delivery_status', 'reached').eq('delivery_pin', code).select(),
-          { delivery_status: 'handed_over', updated_at: iso(), [SIDECAR]: sidecarOf({ ...o, updatedAt: now() }) },
-        );
-        if (error || !data?.length) {
-          sync();
-          return 'wrong';
+        try {
+          const r = await write(orderId, null, () => api.verifyHandover(orderId, code));
+          if (r === 'ok') {
+            const cur = get().orders[orderId];
+            if (cur) put({ ...cur, state: 'CONFIRMATION_RECEIVED', updatedAt: now() });
+          }
+          return r;
+        } catch (e) {
+          // not_allowed: no longer this courier's order at the door — the re-sync shows why
+          return toApiError(e).code === 'offline' ? 'offline' : 'wrong';
         }
-        set((s) => ({ orders: { ...s.orders, [orderId]: { ...s.orders[orderId], state: 'CONFIRMATION_RECEIVED', updatedAt: now() } } }));
-        applyRows(data);
-        return 'ok';
       },
-      cancel: (orderId) => patch(orderId, { state: 'CANCELLED' }, { delivery_status: 'cancelled' }),
-      rate: (orderId, rating) => patch(orderId, { rating }, { rating }),
+
+      cancel: (orderId) => fire(orderId, { state: 'CANCELLED' }, () => api.cancelOrder(orderId)),
+      rate: (orderId, rating) => fire(orderId, { rating }, () => api.rateOrder(orderId, rating)),
+
       setDriverPhone: (orderId, phone) => {
         const p = phone.trim() || undefined;
         if (get().orders[orderId]?.driverPhone === p) return;
-        patch(orderId, { driverPhone: p }, { driver_phone: p ?? null });
+        fire(orderId, { driverPhone: p }, () => api.setDriverPhone(orderId, p ?? ''));
       },
-      report: (orderId, by, reason, note) => {
-        const report = { by, reason, note: note || undefined, at: now() };
-        const remote = { report: JSON.stringify(report) };
-        if (by === 'courier') {
-          patch(
-            orderId,
-            { report, courierRegNo: undefined, courierName: undefined, courierUpi: undefined, courierPhone: undefined, otp: undefined, state: 'ORDER_PLACED' },
-            { ...remote, delivery_status: 'available', rider_reg_no: null, rider_name: null, rider_upi: null, rider_phone: null, delivery_pin: null, pin_expiry: null },
-          );
-        } else {
-          patch(orderId, { report, state: 'DISPUTED' }, { ...remote, delivery_status: 'disputed' });
-        }
+
+      report: (orderId, reason, note) => {
+        const o = get().orders[orderId];
+        const u = me();
+        if (!o || !u) return;
+        const report = { by: o.courierId === u.id ? ('courier' as const) : ('customer' as const), reason, note: note || undefined, at: now() };
+        const local: Partial<Order> =
+          report.by === 'courier'
+            ? { report, courierId: undefined, courierName: undefined, courierUpi: undefined, courierPhone: undefined, otp: undefined, state: 'ORDER_PLACED' }
+            : { report, state: 'DISPUTED' };
+        fire(orderId, local, () => api.reportOrder(orderId, reason, note));
       },
-      reset: () => set({ orders: {} }),
+
+      reset: () => {
+        for (const k of Object.keys(privateAt)) delete privateAt[k];
+        set({ orders: {} });
+      },
     }),
-    { name: 'onmyway.orders', storage: createJSONStorage(() => AsyncStorage) },
+    {
+      // v2: orders from the old backend use reg numbers as identity; start clean
+      name: 'onmyway.orders.v2',
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (s) => ({ orders: s.orders, fares: s.fares }),
+    },
   ),
 );

@@ -32,7 +32,7 @@ export function RunScreen() {
   const orders = useOrders((s) => s.orders);
 
   const mine = Object.values(orders)
-    .filter((o) => o.courierRegNo === me.regNo && o.state !== 'ORDER_PLACED' && o.state !== 'CANCELLED')
+    .filter((o) => o.courierId === me.id && o.state !== 'ORDER_PLACED' && o.state !== 'CANCELLED')
     .filter((o) => !DONE.has(o.state) || Date.now() - o.updatedAt < RUN_WINDOW)
     .sort((a, b) => a.createdAt - b.createdAt);
   const left = mine.filter((o) => !DONE.has(o.state));

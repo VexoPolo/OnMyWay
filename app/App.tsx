@@ -9,13 +9,14 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Logo } from './src/components/Logo';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { SplashScreen } from './src/screens/SplashScreen';
-import { useAuth } from './src/store/auth';
+import { startAuthWatch, useAuth } from './src/store/auth';
 import { startSync } from './src/store/orders';
 import { colors } from './src/theme';
 
 export default function App() {
   const [splashDone, setSplashDone] = useState(false);
   const signedIn = useAuth((s) => !!s.user);
+  useEffect(() => startAuthWatch(), []); // drop the stored user if the Supabase session is gone
   useEffect(() => (signedIn ? startSync() : undefined), [signedIn]); // live orders while signed in
   const [ready] = useFonts({
     Archivo_800ExtraBold,

@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -8,9 +8,10 @@ import { Screen } from '../../components/Screen';
 import { Tap } from '../../components/Tap';
 import { T } from '../../components/Text';
 import type { AppStackParams } from '../../navigation/types';
-import { PICKUP_POINTS, estimateKm, type PickupPoint } from '../../services/mock';
+import { PICKUP_POINTS, type PickupPoint } from '../../services/mock';
 import { useAuth } from '../../store/auth';
-import { platformOf, quoteFare, useOrders } from '../../store/orders';
+import { ERROR_COPY, toApiError } from '../../services/backend/errors';
+import { useOrders } from '../../store/orders';
 import type { PackageSize } from '../../store/types';
 import { colors, fonts, space } from '../../theme';
 
@@ -25,35 +26,41 @@ const SIZES: { id: PackageSize; label: string }[] = [
 export function NewOrderScreen({ navigation }: Props) {
   const user = useAuth((s) => s.user)!;
   const place = useOrders((s) => s.place);
+  const fares = useOrders((s) => s.fares);
+  const loadFares = useOrders((s) => s.loadFares);
   const [size, setSize] = useState<PackageSize>('M');
   const [pickup, setPickup] = useState<PickupPoint>('Main Gate');
   const [trackingId, setTrackingId] = useState('');
   const [pickupOtp, setPickupOtp] = useState('');
   const [driverPhone, setDriverPhone] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+  useEffect(() => void loadFares(), [loadFares]); // prices live on the server; refresh each visit
 
   const dropoff = user.block ? `${user.block} block` : 'Your block';
-  const km = estimateKm(pickup, user.block ?? '');
-  const fare = quoteFare(size, km);
+  const fare = fares[size]; // from quote_fare; undefined until the server answers
   const tid = trackingId.trim().toUpperCase();
   // Amazon's kiosk hands parcels over by tracking ID; at the gate the courier goes by name and block.
   const needsTid = pickup === 'Amazon Pick Up Point';
-  const ready = (needsTid ? tid.length >= 6 : tid.length === 0 || tid.length >= 6) && (pickupOtp.length === 0 || pickupOtp.length === 4);
+  const ready = fare !== undefined && (needsTid ? tid.length >= 6 : tid.length === 0 || tid.length >= 6) && (pickupOtp.length === 0 || pickupOtp.length === 4);
 
-  const submit = () => {
-    const order = place({
-      customerRegNo: user.regNo,
-      customerName: user.name,
-      size,
-      pickup,
-      dropoff,
-      distanceKm: km,
-      trackingId: tid || undefined,
-      customerPhone: user.phone,
-      platform: platformOf(tid),
-      pickupOtp: pickupOtp || undefined,
-      driverPhone: driverPhone.trim() || undefined,
-    });
-    navigation.replace('Searching', { orderId: order.id });
+  const submit = async () => {
+    setBusy(true);
+    setError(undefined);
+    try {
+      // fare, platform and drop-off block are set by the server
+      const order = await place({
+        size,
+        pickup,
+        trackingId: tid || undefined,
+        pickupOtp: pickupOtp || undefined,
+        driverPhone: driverPhone.trim() || undefined,
+      });
+      navigation.replace('Searching', { orderId: order.id });
+    } catch (e) {
+      setError(ERROR_COPY[toApiError(e).code]);
+      setBusy(false);
+    }
   };
 
   return (
@@ -123,9 +130,9 @@ export function NewOrderScreen({ navigation }: Props) {
       </View>
 
       <View style={s.bottom}>
-        <Button title={`Confirm order · ₹${fare}`} onPress={submit} disabled={!ready} />
-        <T kind="caption" style={{ textAlign: 'center' }}>
-          A courier heading your way will pick this up
+        <Button title={fare !== undefined ? `Confirm order · ₹${fare}` : 'Confirm order'} onPress={submit} loading={busy} disabled={!ready} />
+        <T kind="caption" style={[{ textAlign: 'center' }, !!error && { color: colors.error }]}>
+          {error ?? 'A courier heading your way will pick this up'}
         </T>
       </View>
     </Screen>

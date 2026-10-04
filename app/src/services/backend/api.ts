@@ -121,23 +121,27 @@ export function toOrder(r: DbOrder): OrderRecord {
   };
 }
 
+// supabase-js resolves to { data: T, error: null } | { data: null, error: E }; take R whole so
+// TypeScript keeps T (matching against `T | null` directly makes it infer `never`).
+type Res = { data: unknown; error: unknown };
+
 /** Unwrap a supabase-js result that may legitimately be empty (maybeSingle). Throws ApiError on error. */
-async function callMaybe<T>(p: PromiseLike<{ data: T | null; error: unknown }>): Promise<T | null> {
-  let res: { data: T | null; error: unknown };
+async function callMaybe<R extends Res>(p: PromiseLike<R>): Promise<R['data'] | null> {
+  let res: R;
   try {
     res = await p;
   } catch (e) {
     throw toApiError(e);
   }
   if (res.error) throw toApiError(res.error);
-  return res.data;
+  return res.data ?? null;
 }
 
 /** Same, for calls that always return something: an empty answer is an error. */
-async function call<T>(p: PromiseLike<{ data: T | null; error: unknown }>): Promise<T> {
+async function call<R extends Res>(p: PromiseLike<R>): Promise<NonNullable<R['data']>> {
   const data = await callMaybe(p);
-  if (data === null) throw new ApiError('unknown', 'Empty response from the server');
-  return data;
+  if (data === null || data === undefined) throw new ApiError('unknown', 'Empty response from the server');
+  return data as NonNullable<R['data']>;
 }
 
 async function myId(): Promise<string> {
@@ -197,6 +201,16 @@ export async function getOrderPrivate(orderId: string): Promise<OrderPrivate | n
       ? { name: r.other_name, regNo: r.other_reg_no ?? undefined, phone: r.other_phone ?? undefined, upi: r.other_upi ?? undefined }
       : undefined,
   };
+}
+
+/** Your latest report on an order (RLS: you only ever see reports you filed). */
+export async function getMyReport(
+  orderId: string,
+): Promise<{ by: 'customer' | 'courier'; reason: string; note?: string; at: number } | null> {
+  const r = await callMaybe(
+    db.from('reports').select('*').eq('order_id', orderId).order('id', { ascending: false }).limit(1).maybeSingle(),
+  );
+  return r ? { by: r.reporter_role === 'courier' ? 'courier' : 'customer', reason: r.reason, note: r.note || undefined, at: Date.parse(r.created_at) } : null;
 }
 
 /** The audit trail of one order (only the customer and courier on it can read it). */

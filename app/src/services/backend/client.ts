@@ -2,6 +2,7 @@ import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { AppState } from 'react-native';
+import { USES_REDIRECT } from './config';
 import type { Database } from './database.types';
 
 // Project fikinghjzmnxgmvnibyk. Both values are public by design (they ship in every build);
@@ -14,7 +15,11 @@ if (!URL || !KEY) {
 
 /**
  * The one Supabase client. Sessions persist on the device and refresh themselves, so a student
- * signs in once. PKCE is on so Google / Microsoft sign-in can be switched on without touching this.
+ * signs in once.
+ *
+ * PKCE only for Google / Microsoft (redirect sign-in). With email codes it would add nothing — the
+ * code is typed in, never redirected — and on Expo Go, which has no WebCrypto, it only produced a
+ * warning and a downgraded "plain" challenge on every send.
  */
 export const db = createClient<Database>(URL, KEY, {
   auth: {
@@ -22,7 +27,7 @@ export const db = createClient<Database>(URL, KEY, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false,
-    flowType: 'pkce',
+    flowType: USES_REDIRECT ? 'pkce' : 'implicit',
   },
 });
 

@@ -14,7 +14,7 @@ import { Tap } from '../components/Tap';
 import { T } from '../components/Text';
 import type { AppStackParams } from '../navigation/types';
 import { useAuth } from '../store/auth';
-import { MAX_BATCH, useOrders } from '../store/orders';
+import { ACCEPT_COPY, MAX_BATCH, useOrders } from '../store/orders';
 import { brandGradient, colors, fonts, radius, space } from '../theme';
 
 const ACTIVE = new Set(['ORDER_PLACED', 'AGENT_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'ARRIVED', 'CONFIRMATION_RECEIVED', 'DISPUTED']);
@@ -38,7 +38,7 @@ function CustomerHome() {
   const user = useAuth((s) => s.user)!;
   const orders = useOrders((s) => s.orders);
   const active = Object.values(orders)
-    .filter((o) => o.customerRegNo === user.regNo && ACTIVE.has(o.state))
+    .filter((o) => o.customerId === user.id && ACTIVE.has(o.state))
     .sort((a, b) => b.createdAt - a.createdAt);
 
   return (
@@ -76,13 +76,13 @@ function CourierHome() {
   const [taking, setTaking] = useState(false);
 
   const all = Object.values(orders).sort((a, b) => b.createdAt - a.createdAt);
-  // ponytail: own orders are listed too so one phone can play both roles; the backend will exclude them
-  const open = all.filter((o) => o.state === 'ORDER_PLACED');
-  const delivered = all.filter((o) => o.courierRegNo === user.regNo && o.state === 'DELIVERED' && Date.now() - o.updatedAt < 7 * 86_400_000);
+  // your own orders aren't yours to carry (the server answers 'own'), so they stay out of the pool
+  const open = all.filter((o) => o.state === 'ORDER_PLACED' && o.customerId !== user.id);
+  const delivered = all.filter((o) => o.courierId === user.id && o.state === 'DELIVERED' && Date.now() - o.updatedAt < 7 * 86_400_000);
   const earned = delivered.reduce((sum, o) => sum + o.fare, 0);
-  const here = loc ? all.filter((o) => o.pickup === loc && (o.state === 'ORDER_PLACED' || (o.courierRegNo === user.regNo && ACTIVE.has(o.state)))) : [];
+  const here = loc ? all.filter((o) => o.pickup === loc && ((o.state === 'ORDER_PLACED' && o.customerId !== user.id) || (o.courierId === user.id && ACTIVE.has(o.state)))) : [];
   // Already carrying something? The run screen is the way back into it.
-  const carrying = all.filter((o) => o.courierRegNo === user.regNo && ACTIVE.has(o.state) && o.state !== 'ORDER_PLACED');
+  const carrying = all.filter((o) => o.courierId === user.id && ACTIVE.has(o.state) && o.state !== 'ORDER_PLACED');
   const chosen = picked.filter((id) => orders[id]?.state === 'ORDER_PLACED');
   const chosenFare = chosen.reduce((sum, id) => sum + (orders[id]?.fare ?? 0), 0);
   const roomLeft = MAX_BATCH - carrying.length;
@@ -101,13 +101,17 @@ function CourierHome() {
 
   const takeBatch = async () => {
     setTaking(true);
-    const { won, lost } = await acceptMany(chosen, user.regNo, user.upi);
+    const { won, lost, limit } = await acceptMany(chosen);
     setTaking(false);
     setPicked([]);
     if (won.length === 0) {
-      setNudge('Someone else got there first.');
+      setNudge(limit ? ACCEPT_COPY.limit : ACCEPT_COPY.taken);
       return setTimeout(() => setNudge(undefined), 2500);
     }
+    if (limit) {
+      setNudge(`Took ${won.length}. ${ACCEPT_COPY.limit}`);
+      setTimeout(() => setNudge(undefined), 3000);
+    } else
     if (lost > 0) {
       setNudge(`${lost} ${lost === 1 ? 'parcel was' : 'parcels were'} taken by someone else.`);
       setTimeout(() => setNudge(undefined), 3000);
@@ -124,9 +128,9 @@ function CourierHome() {
   const start = async (o: Order) => {
     if (o.state === 'ORDER_PLACED') {
       setBusyId(o.id);
-      const r = await accept(o.id, user.regNo, user.upi);
+      const r = await accept(o.id);
       setBusyId(null);
-      if (r !== 'ok') return setNudge(r === 'taken' ? 'Someone else got there first.' : "Can't reach the server — try again.");
+      if (r !== 'ok') return setNudge(ACCEPT_COPY[r]);
     }
     nav.navigate('CourierJob', { orderId: o.id, point: loc ?? undefined });
   };
@@ -218,7 +222,7 @@ function CourierHome() {
                 {isOpen && (
                   <View style={s.itemBody}>
                     <Row k="Platform" v={o.platform ?? '—'} />
-                    <Row k="Ordered by" v={o.customerName ?? o.customerRegNo} />
+                    <Row k="Ordered by" v={o.customerName ?? 'Shown once you accept'} />
                     <Row k="Drop-off" v={o.dropoff} />
                     <Row k="Driver phone" v={o.driverPhone ?? 'Not shared yet'} mono={!!o.driverPhone} />
                     <Row k="You earn" v={`₹${o.fare}`} />

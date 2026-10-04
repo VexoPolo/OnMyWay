@@ -15,12 +15,13 @@ export function ProfileScreen() {
   const setRole = useAuth((s) => s.setRole);
   const signOut = useAuth((s) => s.signOut);
   const setUpi = useAuth((s) => s.setUpi);
+  const saveUpi = useAuth((s) => s.saveUpi);
   const orders = useOrders((s) => s.orders);
   const resetOrders = useOrders((s) => s.reset);
 
   const all = Object.values(orders);
-  const delivered = all.filter((o) => o.courierRegNo === user.regNo && o.state === 'DELIVERED');
-  const placed = all.filter((o) => o.customerRegNo === user.regNo);
+  const delivered = all.filter((o) => o.courierId === user.id && o.state === 'DELIVERED');
+  const placed = all.filter((o) => o.customerId === user.id);
   const earned = delivered.reduce((sum, o) => sum + o.fare, 0);
   const initials = user.name
     .split(' ')
@@ -90,6 +91,7 @@ export function ProfileScreen() {
             <TextInput
               value={user.upi ?? ''}
               onChangeText={setUpi}
+              onEndEditing={saveUpi}
               placeholder="yourname@upi"
               placeholderTextColor={colors.muted}
               autoCapitalize="none"

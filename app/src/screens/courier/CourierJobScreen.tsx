@@ -12,7 +12,7 @@ import { T } from '../../components/Text';
 import { Timeline } from '../../components/Timeline';
 import type { AppStackParams } from '../../navigation/types';
 import { useAuth } from '../../store/auth';
-import { useOrders } from '../../store/orders';
+import { ACCEPT_COPY, HANDOVER_COPY, useOrders } from '../../store/orders';
 import type { Order } from '../../store/types';
 import { colors, fonts, radius, space } from '../../theme';
 
@@ -54,25 +54,26 @@ export function CourierJobScreen({ navigation, route }: Props) {
   const [msg, setMsg] = useState<string>();
 
   if (!order) return null;
-  const mine = order.courierRegNo === me.regNo;
+  const mine = order.courierId === me.id;
   // Other parcels still on this run — drives "next stop" instead of a dead end.
   const rest = Object.values(all)
-    .filter((o) => o.id !== orderId && o.courierRegNo === me.regNo && CARRYING.has(o.state))
+    .filter((o) => o.id !== orderId && o.courierId === me.id && CARRYING.has(o.state))
     .sort((a, b) => a.createdAt - b.createdAt);
   const first = order.customerName?.split(' ')[0] ?? 'the customer';
 
   const [accepting, setAccepting] = useState(false);
   const onAccept = async () => {
     setAccepting(true);
-    const r = await accept(orderId, me.regNo, me.upi);
+    const r = await accept(orderId);
     setAccepting(false);
     if (r === 'taken') setMsg('Someone else got there first. This job is taken.');
-    else if (r === 'offline') setMsg("Can't reach the server — try again.");
+    else if (r !== 'ok') setMsg(ACCEPT_COPY[r]);
   };
   const onVerify = async () => {
     const r = await confirm(orderId, code);
     if (r === 'ok') return setMsg(undefined);
-    setMsg(r === 'expired' ? 'Code expired. Ask the customer for a fresh one.' : 'Wrong code. Ask them to read it again.');
+    setMsg(HANDOVER_COPY[r]);
+    setCode('');
   };
 
   const pickupPhase = order.state === 'ORDER_PLACED' || order.state === 'AGENT_ASSIGNED';
@@ -212,7 +213,7 @@ export function CourierJobScreen({ navigation, route }: Props) {
         submitLabel="Report and release this order"
         footnote="Your reg number and the timeline go to the campus admin"
         onSubmit={(reason, note) => {
-          report(orderId, 'courier', reason, note);
+          report(orderId, reason, note);
           setReporting(false);
           navigation.popToTop();
         }}
@@ -233,7 +234,7 @@ function Details({ order }: { order: Order }) {
     ['Tracker ID', order.trackingId ?? '—', 'mono'],
     ['Platform', order.platform ?? '—', undefined],
     ['Parcel size', SIZE_LABEL[order.size], 'tag'],
-    ['Ordered by', order.customerName ?? order.customerRegNo, undefined],
+    ['Ordered by', order.customerName ?? 'Shown once you accept', undefined],
     ['Drop-off', order.dropoff, undefined],
     ['Driver phone', order.driverPhone ?? 'Not shared yet', order.driverPhone ? 'mono' : undefined],
     ['You earn', `₹${order.fare}`, undefined],

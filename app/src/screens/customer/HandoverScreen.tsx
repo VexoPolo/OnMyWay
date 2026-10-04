@@ -15,9 +15,10 @@ type Props = NativeStackScreenProps<AppStackParams, 'Handover'>;
 export function HandoverScreen({ navigation, route }: Props) {
   const { orderId } = route.params;
   const order = useOrders((s) => s.orders[orderId]);
-  const refresh = useOrders((s) => s.arrive); // re-arriving issues a fresh 5-minute code
+  const refresh = useOrders((s) => s.refreshPin); // server issues a fresh 5-minute code and clears a lock
   const [left, setLeft] = useState('');
   const expired = left === '0:00';
+  const locked = order?.pinAttemptsLeft === 0; // the courier typed 5 wrong codes
 
   useEffect(() => {
     if (!order?.otp) return;
@@ -64,10 +65,10 @@ export function HandoverScreen({ navigation, route }: Props) {
           <T kind="state">CONFIRMATION_RECEIVED</T>
         </View>
       </Card>
-      {expired && (
+      {(expired || locked) && (
         <>
           <T kind="caption" style={{ color: colors.error, textAlign: 'center' }}>
-            This code has expired.
+            {locked ? 'Too many wrong tries, so this code is locked.' : 'This code has expired.'}
           </T>
           <Button title="Get a fresh code" onPress={() => refresh(orderId)} />
         </>

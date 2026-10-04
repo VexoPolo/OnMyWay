@@ -7,28 +7,32 @@ import { Logo } from '../../components/Logo';
 import { Screen } from '../../components/Screen';
 import { T } from '../../components/Text';
 import type { AuthStackParams } from '../../navigation/types';
-import { api } from '../../services/mock';
+import { ERROR_COPY, toApiError } from '../../services/backend/errors';
 import { useAuth } from '../../store/auth';
 import { space } from '../../theme';
 
 type Props = NativeStackScreenProps<AuthStackParams, 'SignIn'>;
 
+// Shape only. Which domains may sign in is decided by the server (app_config.allowed_email_domains).
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
 export function SignInScreen({ navigation }: Props) {
-  const signIn = useAuth((s) => s.signIn);
-  const complete = useAuth((s) => s.complete);
-  const [regNo, setRegNo] = useState('');
-  const [password, setPassword] = useState('');
+  const sendCode = useAuth((s) => s.sendCode);
+  const [email, setEmail] = useState('');
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
     setBusy(true);
     setError(undefined);
-    const res = await api.signIn(regNo, password);
-    setBusy(false);
-    if (!res.ok) return setError(res.error);
-    signIn(regNo);
-    complete('Student ' + regNo.trim().slice(-4)); // real name is pulled from the users table
+    try {
+      await sendCode(email);
+      navigation.navigate('Otp');
+    } catch (e) {
+      setError(ERROR_COPY[toApiError(e).code]);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -37,19 +41,19 @@ export function SignInScreen({ navigation }: Props) {
         <Logo variant="lockup" height={36} />
       </View>
       <T kind="h1">Sign in</T>
-      <T kind="caption">Your registration number is the login and the proof you belong on campus.</T>
+      <T kind="caption">We'll email you a code. Your VIT email is the proof you belong on campus.</T>
       <View style={s.form}>
         <Field
-          label="Registration number"
-          placeholder="22BCE1234"
-          autoCapitalize="characters"
+          label="VIT email ID"
+          placeholder="yourname@vitstudent.ac.in"
+          autoCapitalize="none"
           autoCorrect={false}
-          value={regNo}
-          onChangeText={setRegNo}
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
           error={error}
         />
-        <Field label="Password" placeholder="••••••••" secureTextEntry value={password} onChangeText={setPassword} />
-        <Button title="Sign in" onPress={submit} loading={busy} disabled={!regNo || !password} />
+        <Button title="Send me a code" onPress={submit} loading={busy} disabled={!EMAIL_RE.test(email.trim())} />
         <Button title="New here? Register" variant="ghost" onPress={() => navigation.navigate('Register')} />
       </View>
     </Screen>

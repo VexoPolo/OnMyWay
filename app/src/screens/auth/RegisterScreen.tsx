@@ -8,6 +8,7 @@ import { Tap } from '../../components/Tap';
 import { Ionicons } from '@expo/vector-icons';
 import { T } from '../../components/Text';
 import type { AuthStackParams } from '../../navigation/types';
+import { ERROR_COPY, toApiError } from '../../services/backend/errors';
 import { useAuth } from '../../store/auth';
 import { colors, fonts, radius, space } from '../../theme';
 
@@ -18,28 +19,41 @@ const LH = ['A', 'B', 'C', 'D', 'E', 'E-ANX', 'F', 'G', 'H', 'J', 'S'];
 const REG_RE = /^\d{2}[A-Z]{3}\d{4}$/;
 
 /** Frame 1 — Verify you're one of us. Step 1 of 3. */
-export function RegisterScreen({ navigation }: Props) {
+export function RegisterScreen({ navigation, route }: Props) {
   const register = useAuth((s) => s.register);
-  const complete = useAuth((s) => s.complete);
   const [name, setName] = useState('');
   const [regNo, setRegNo] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(route.params?.email ?? '');
   const [phone, setPhone] = useState('');
   const [block, setBlock] = useState<string | null>(null);
   const [idAttached, setIdAttached] = useState(false);
   const [sheet, setSheet] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [regError, setRegError] = useState<string>();
+  const [emailError, setEmailError] = useState<string>();
 
   const valid =
     name.trim().length > 1 &&
     REG_RE.test(regNo.trim().toUpperCase()) &&
-    /^[^@\s]+@vitstudent\.ac\.in$/i.test(email.trim()) &&
+    /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim()) && // which domains is the server's call (app_config)
     phone.replace(/\D/g, '').length >= 10 &&
     !!block &&
     idAttached;
 
-  const submit = () => {
-    register({ name: name.trim(), regNo, email: email.trim().toLowerCase(), phone: phone.trim(), block: block! });
-    complete(name.trim()); // root navigator swaps to Role once the user exists
+  const submit = async () => {
+    setBusy(true);
+    setRegError(undefined);
+    setEmailError(undefined);
+    try {
+      const next = await register({ name: name.trim(), regNo, email: email.trim().toLowerCase(), phone: phone.trim(), block: block! });
+      if (next === 'code_sent') navigation.navigate('Otp'); // 'signed_in': the root navigator moves on by itself
+    } catch (e) {
+      const { code } = toApiError(e);
+      if (code === 'reg_no_taken' || code === 'reg_no_locked') setRegError(ERROR_COPY[code]);
+      else setEmailError(ERROR_COPY[code]);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -65,6 +79,7 @@ export function RegisterScreen({ navigation }: Props) {
           autoCorrect={false}
           value={regNo}
           onChangeText={setRegNo}
+          error={regError}
         />
         <T kind="caption" style={s.hint}>
           As on your ID card — we'll cross-check this
@@ -78,6 +93,7 @@ export function RegisterScreen({ navigation }: Props) {
           keyboardType="email-address"
           value={email}
           onChangeText={setEmail}
+          error={emailError}
         />
         <T kind="caption" style={s.hint}>
           Must be your official @vitstudent.ac.in address
@@ -119,7 +135,7 @@ export function RegisterScreen({ navigation }: Props) {
         </T>
       </View>
 
-      <Button title="Continue" onPress={submit} disabled={!valid} style={{ marginTop: space.sm }} />
+      <Button title="Continue" onPress={submit} loading={busy} disabled={!valid} style={{ marginTop: space.sm }} />
       <Tap onPress={() => navigation.navigate('SignIn')}>
         <T kind="caption" style={s.foot}>
           Already registered? <T kind="caption" style={{ color: colors.brandDark }}>Sign in</T>

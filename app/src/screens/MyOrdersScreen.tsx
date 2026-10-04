@@ -15,7 +15,7 @@ export function MyOrdersScreen() {
   const user = useAuth((s) => s.user)!;
   const orders = useOrders((s) => s.orders);
   const list = Object.values(orders)
-    .filter((o) => o.customerRegNo === user.regNo || o.courierRegNo === user.regNo)
+    .filter((o) => o.customerId === user.id || o.courierId === user.id)
     .sort((a, b) => b.createdAt - a.createdAt);
   const doneStates = new Set(['DELIVERED', 'CANCELLED']);
   const active = list.filter((o) => !doneStates.has(o.state));
@@ -30,7 +30,7 @@ export function MyOrdersScreen() {
       {active.length > 0 && <T kind="eyebrow">Active</T>}
       <View style={s.list}>
         {active.map((o) => {
-          const asCourier = o.courierRegNo === user.regNo;
+          const asCourier = o.courierId === user.id;
           return (
             <OrderCard
               key={o.id}
@@ -45,7 +45,7 @@ export function MyOrdersScreen() {
       {done.length > 0 && <T kind="eyebrow" style={{ marginTop: 8 }}>Done</T>}
       <View style={[s.list, { opacity: 0.7 }]}>
         {done.map((o) => {
-          const asCourier = o.courierRegNo === user.regNo;
+          const asCourier = o.courierId === user.id;
           return (
             <OrderCard
               key={o.id}

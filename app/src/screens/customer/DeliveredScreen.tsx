@@ -119,7 +119,7 @@ export function DeliveredScreen({ navigation, route }: Props) {
         submitLabel="Report and flag this order"
         footnote="The order is marked DISPUTED on both phones"
         onSubmit={(reason, note) => {
-          report(orderId, 'customer', reason, note);
+          report(orderId, reason, note);
           setReporting(false);
         }}
         onClose={() => setReporting(false)}

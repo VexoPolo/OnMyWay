@@ -1,22 +1,10 @@
 import type { Session } from '@supabase/supabase-js';
 import { db } from './client';
-import { toApiError } from './errors';
+import { USES_REDIRECT } from './config';
+import { ApiError, toApiError } from './errors';
 
-/**
- * Sign-in is swappable. The database only ever looks at auth.uid() and the account's verified
- * email (checked against app_config.allowed_email_domains), so any of these methods works with
- * the same tables and functions. Pick one with EXPO_PUBLIC_SIGN_IN_METHOD.
- *
- *   email_code — 6-digit code by email (Supabase Auth + Brevo SMTP). Default.
- *   google     — "Sign in with Google". Needs the Google provider enabled in Supabase.
- *   microsoft  — "Sign in with Microsoft" (Supabase calls it `azure`). VIT student mail is
- *                Microsoft 365, so this works even if VIT's mail servers block our emails.
- */
-export type SignInMethod = 'email_code' | 'google' | 'microsoft';
-
-const METHODS: readonly SignInMethod[] = ['email_code', 'google', 'microsoft'];
-const fromEnv = process.env.EXPO_PUBLIC_SIGN_IN_METHOD as SignInMethod | undefined;
-export const SIGN_IN_METHOD: SignInMethod = fromEnv && METHODS.includes(fromEnv) ? fromEnv : 'email_code';
+// Which method is on, and the code length, live in config.ts (client.ts needs them too).
+export { OTP_LENGTH, SIGN_IN_METHOD, type SignInMethod } from './config';
 
 // ---- email code -----------------------------------------------------------------------------
 
@@ -48,6 +36,14 @@ export async function verifyEmailCode(email: string, code: string): Promise<Sess
  * Supabase -> Auth -> URL Configuration -> Redirect URLs.
  */
 export async function startOAuth(method: 'google' | 'microsoft', redirectTo: string): Promise<string> {
+  if (!USES_REDIRECT) {
+    throw new ApiError('provider_disabled', 'Set EXPO_PUBLIC_SIGN_IN_METHOD to google or microsoft (turns PKCE on).');
+  }
+  // Without WebCrypto, supabase-js silently downgrades the PKCE challenge to "plain". Refuse
+  // instead: install a WebCrypto polyfill (e.g. one built on expo-crypto) before enabling this.
+  if (typeof globalThis.crypto?.subtle === 'undefined') {
+    throw new ApiError('provider_disabled', 'WebCrypto missing: add a crypto.subtle polyfill before using redirect sign-in.');
+  }
   const { data, error } = await db.auth.signInWithOAuth({
     provider: method === 'microsoft' ? 'azure' : 'google',
     options: {

@@ -7,6 +7,7 @@ import { PinGlyph, WalkerGlyph } from '../components/Glyphs';
 import { HomeScreen } from '../screens/HomeScreen';
 import { MyOrdersScreen } from '../screens/MyOrdersScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { OtpScreen } from '../screens/auth/OtpScreen';
 import { RegisterScreen } from '../screens/auth/RegisterScreen';
 import { RoleScreen } from '../screens/auth/RoleScreen';
 import { SignInScreen } from '../screens/auth/SignInScreen';
@@ -77,6 +78,7 @@ export function RootNavigator() {
           <Auth.Screen name="Welcome" component={WelcomeScreen} />
           <Auth.Screen name="Register" component={RegisterScreen} />
           <Auth.Screen name="SignIn" component={SignInScreen} />
+          <Auth.Screen name="Otp" component={OtpScreen} />
         </Auth.Navigator>
       ) : !user.role ? (
         <Auth.Navigator screenOptions={noHeader}>
