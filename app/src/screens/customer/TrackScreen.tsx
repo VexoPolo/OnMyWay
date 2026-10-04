@@ -1,8 +1,10 @@
+import { useIsFocused } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
 import { Linking, StyleSheet, TextInput, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
+import { WalkingCourier } from '../../components/Courier';
 import { ReportSheet } from '../../components/ReportSheet';
 import { Screen } from '../../components/Screen';
 import { Tap } from '../../components/Tap';
@@ -32,6 +34,7 @@ export function TrackScreen({ navigation, route }: Props) {
   const [driverPhone, setDriver] = useState<string | null>(null); // null = not editing, show stored value
   const [reporting, setReporting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const focused = useIsFocused();
 
   useEffect(() => {
     if (!order) return;
@@ -50,6 +53,7 @@ export function TrackScreen({ navigation, route }: Props) {
   return (
     <Screen scroll>
       <View style={s.head}>
+        <WalkingCourier active={focused} />
         <T kind="eyebrow">Order {order.trackingId ?? ''}</T>
         <T kind="h1" style={{ textTransform: 'none', fontSize: 28, lineHeight: 32 }}>{now}</T>
         <T kind="caption">Then four digits at your door — that's how you know it's yours.</T>
