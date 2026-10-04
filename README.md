@@ -1,6 +1,4 @@
-# OnMyWay — VINHACK
 
-Hackathon project folder for **VINHACK**. The product is **OnMyWay**, a campus peer-to-peer delivery marketplace (React Native / Expo).
 
 ## The idea in one line
 
