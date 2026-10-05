@@ -6,7 +6,8 @@ import { T } from './Text';
 const H = 60;
 const THUMB = 52;
 const PAD = 4;
-const NATIVE = Platform.OS !== 'web';
+// x drives the fill's width, which the native driver can't animate, so every spring on x stays on JS.
+const NATIVE = false;
 // Stops the browser from scrolling the page while the thumb is dragged.
 const NO_TOUCH_SCROLL = Platform.OS === 'web' ? ({ touchAction: 'none', userSelect: 'none', cursor: 'grab' } as object) : undefined;
 
