@@ -71,7 +71,7 @@ export interface OrderEvent {
   at: number;
 }
 
-export type AcceptResult = 'ok' | 'taken' | 'missing' | 'limit' | 'own';
+export type AcceptResult = 'ok' | 'taken' | 'missing' | 'limit' | 'own' | 'unverified';
 export type VerifyResult = 'ok' | 'wrong' | 'expired' | 'locked';
 
 // ---- wire <-> app -------------------------------------------------------------------------
@@ -342,6 +342,13 @@ export async function uploadIdCard(localUri: string, mimeType = 'image/jpeg'): P
 }
 
 /** Has the signed-in student uploaded an ID card? Unknown (offline...) counts as yes: never block sign-in on it. */
+/** Ask the server to check the uploaded ID card (edge function verify-id). The result lands on
+ * the profile as id_status; nothing in the app waits for it. */
+export async function verifyIdCard(): Promise<void> {
+  const { error } = await db.functions.invoke('verify-id', { method: 'POST' });
+  if (error) throw toApiError(error);
+}
+
 export async function hasIdCard(): Promise<boolean> {
   const uid = (await db.auth.getSession()).data.session?.user.id;
   if (!uid) return true;

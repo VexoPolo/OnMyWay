@@ -111,11 +111,11 @@ function CourierHome() {
 
   const takeBatch = async () => {
     setTaking(true);
-    const { won, lost, limit } = await acceptMany(chosen);
+    const { won, lost, limit, unverified } = await acceptMany(chosen);
     setTaking(false);
     setPicked([]);
     if (won.length === 0) {
-      setNudge(limit ? ACCEPT_COPY.limit : ACCEPT_COPY.taken);
+      setNudge(unverified ? ACCEPT_COPY.unverified : limit ? ACCEPT_COPY.limit : ACCEPT_COPY.taken);
       return setTimeout(() => setNudge(undefined), 2500);
     }
     if (limit) {

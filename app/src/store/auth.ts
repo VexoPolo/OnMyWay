@@ -56,11 +56,18 @@ async function saveRemote(p: Profile) {
       throw new ApiError('id_upload_failed', toApiError(e).message);
     });
   }
-  return api.saveProfile({ regNo: p.regNo.trim().toUpperCase(), name: p.name, phone: p.phone, block: p.block, upi: p.upi }).catch((e) => {
+  const saved = await api.saveProfile({ regNo: p.regNo.trim().toUpperCase(), name: p.name, phone: p.phone, block: p.block, upi: p.upi }).catch((e) => {
     const err = toApiError(e);
     // reg_no_taken, invalid_profile, offline... keep their own copy; anything vague gets the save message
     throw err.code === 'unknown' || err.code === 'code_invalid' ? new ApiError('profile_save_failed', err.message) : err;
   });
+  if (p.idCard) checkIdCard(); // after the save: the check compares the card with this profile
+  return saved;
+}
+
+/** Start the server's ID check. Never blocks sign-in; a failed call leaves the photo for later. */
+function checkIdCard() {
+  api.verifyIdCard().catch((e) => console.warn('verifyIdCard', toApiError(e).code));
 }
 
 export const useAuth = create<AuthState>()(
@@ -117,6 +124,7 @@ export const useAuth = create<AuthState>()(
           await api.uploadIdCard(card.uri, card.mimeType).catch((e) => {
             throw new ApiError('id_upload_failed', toApiError(e).message);
           });
+          checkIdCard();
         }
         set((s) => ({ user: s.pendingIdUser, pendingIdUser: null }));
       },

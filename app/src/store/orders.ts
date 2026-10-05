@@ -233,6 +233,7 @@ export const ACCEPT_COPY: Record<Exclude<AcceptOutcome, 'ok'>, string> = {
   limit: `You're carrying ${MAX_BATCH} parcels, the most for one run. Deliver one first.`,
   own: "That's your own order. Another courier has to take it.",
   missing: 'This order was cancelled.',
+  unverified: 'Your student ID needs to be approved before you can deliver.',
   offline: "Can't reach the server — try again.",
 };
 export type HandoverOutcome = api.VerifyResult | 'offline';
@@ -267,7 +268,7 @@ interface OrdersState {
   /** First-come-first-served on the server: two phones can't both win. */
   accept: (orderId: string) => Promise<AcceptOutcome>;
   /** Take several open orders in one go (max MAX_BATCH). Returns the ids actually won. */
-  acceptMany: (orderIds: string[]) => Promise<{ won: string[]; lost: number; limit: boolean }>;
+  acceptMany: (orderIds: string[]) => Promise<{ won: string[]; lost: number; limit: boolean; unverified: boolean }>;
   /** Courier's next step: picked up -> on my way, or slide-to-complete after the handover. */
   advance: (orderId: string) => void;
   /** Courier is at the door. The server makes the PIN; only the customer can read it. */
@@ -348,15 +349,19 @@ export const useOrders = create<OrdersState>()(
         const won: string[] = [];
         let lost = 0;
         let limit = false;
+        let unverified = false;
         for (const id of orderIds.slice(0, MAX_BATCH)) {
           const r = await get().accept(id);
           if (r === 'ok') won.push(id);
           else if (r === 'limit') {
             limit = true;
             break;
+          } else if (r === 'unverified') {
+            unverified = true; // same answer for every order: stop asking
+            break;
           } else lost++;
         }
-        return { won, lost, limit };
+        return { won, lost, limit, unverified };
       },
 
       advance: (orderId) => {
