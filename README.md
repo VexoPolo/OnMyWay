@@ -1,4 +1,6 @@
+# OnMyWay
 
+Campus peer-to-peer delivery app, built for VINHACK.
 
 ## The idea in one line
 
@@ -42,7 +44,7 @@ Colouring: brand gradient `#FCD34D → #F59E0B`, top-left to bottom-right, on `-
 
 ## Stack
 
-React Native + Expo · Zustand (`persist`) · React Navigation (stack + 3 tabs: Home / My Orders / Profile) · JWT auth · presigned S3 for ID upload · `react-native-maps`
+React Native + Expo · Zustand (`persist`) · React Navigation (stack + 3 tabs: Home / My Orders / Profile) · Supabase (Postgres with RLS, email-code sign-in, realtime, private Storage bucket for ID cards)
 
 ## Priority (18 Sep 2026)
 
@@ -50,7 +52,7 @@ React Native + Expo · Zustand (`persist`) · React Navigation (stack + 3 tabs: 
 
 Build order:
 1. Expo scaffold + theme (tokens from below) + navigation shell (stack → 3 tabs: Home / My Orders / Profile)
-2. Auth: reg number + password → 6-digit OTP → role toggle
+2. Auth: student email → 6-digit code → role toggle
 3. Order store (Zustand + persist) and the state machine
 4. Place order flow (size, route, fare) → searching
 5. Courier side: online toggle, open orders, atomic Accept (second tap gets "taken")
@@ -79,8 +81,13 @@ Prototype in active development. Not production-ready.
 
 ```
 OnMyWay/  (project root)
-├── assets/logo/ the logo — see above
-├── src/         app source
-├── tests/
+├── app/            the phone app
+│   ├── App.tsx
+│   └── src/        components, screens, navigation, store, services/backend
+├── supabase/
+│   ├── migrations/ schema, RLS, database functions (numbered)
+│   ├── scripts/
+│   └── tests/
+├── assets/logo/    the logo — see above
 └── docs/
 ```
