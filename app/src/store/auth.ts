@@ -51,18 +51,27 @@ function toUser(p: api.Profile, email: string | undefined, prev: User | null): U
 
 /** Runs only once signed in, so its failures are never about the code: they get their own codes. */
 async function saveRemote(p: Profile) {
-  if (p.idCard) {
-    await api.uploadIdCard(p.idCard.uri, p.idCard.mimeType).catch((e) => {
-      throw new ApiError('id_upload_failed', toApiError(e).message);
-    });
-  }
   const saved = await api.saveProfile({ regNo: p.regNo.trim().toUpperCase(), name: p.name, phone: p.phone, block: p.block, upi: p.upi }).catch((e) => {
     const err = toApiError(e);
     // reg_no_taken, invalid_profile, offline... keep their own copy; anything vague gets the save message
     throw err.code === 'unknown' || err.code === 'code_invalid' ? new ApiError('profile_save_failed', err.message) : err;
   });
-  if (p.idCard) checkIdCard(); // after the save: the check compares the card with this profile
+  // After the save, so the profile exists when the photo lands (the upload sets id_status to
+  // pending) and the check has a profile to compare with. A retry re-saves the same details.
+  if (p.idCard) {
+    await api.uploadIdCard(p.idCard.uri, p.idCard.mimeType).catch((e) => {
+      throw new ApiError('id_upload_failed', toApiError(e).message);
+    });
+    checkIdCard();
+  }
   return saved;
+}
+
+/** Ask for an ID card when the server has none on file or rejected it; not while one is pending,
+ * approved or in review. Before migration 0012 there is no id_status: fall back to the file. */
+async function needsIdCard(profile: api.Profile): Promise<boolean> {
+  if (profile.idStatus) return profile.idStatus === 'none' || profile.idStatus === 'rejected';
+  return !(await api.hasIdCard());
 }
 
 /** Start the server's ID check. Never blocks sign-in; a failed call leaves the photo for later. */
@@ -111,7 +120,7 @@ export const useAuth = create<AuthState>()(
         if (!profile) return 'needs_profile'; // signed in, but never registered
         const user = toUser(profile, email, get().user);
         // returning student who signed up before the ID step: ask once per sign-in, never block
-        if (!pendingProfile && !(await api.hasIdCard())) {
+        if (!pendingProfile && (await needsIdCard(profile))) {
           set({ pendingIdUser: user, pendingEmail: null, pendingProfile: null });
           return 'needs_id_card';
         }

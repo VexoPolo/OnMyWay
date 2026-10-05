@@ -20,6 +20,8 @@ export interface Profile {
   phone: string;
   block: string;
   upi?: string;
+  /** The server's ID check. undefined until migration 0012 is applied. */
+  idStatus?: 'none' | 'pending' | 'approved' | 'review' | 'rejected';
 }
 
 /** The public part of an order: what RLS lets this user read straight from the table. */
@@ -91,7 +93,15 @@ const FROM_STATUS: Record<string, OrderState> = {
 const ms = (t: string | null | undefined) => (t ? Date.parse(t) : undefined);
 
 function toProfile(r: DbProfile): Profile {
-  return { id: r.id, regNo: r.reg_no, name: r.full_name, phone: r.phone, block: r.hostel_block, upi: r.upi_vpa ?? undefined };
+  return {
+    id: r.id,
+    regNo: r.reg_no,
+    name: r.full_name,
+    phone: r.phone,
+    block: r.hostel_block,
+    upi: r.upi_vpa ?? undefined,
+    idStatus: r.id_status,
+  };
 }
 
 export function toOrder(r: DbOrder): OrderRecord {

@@ -13,6 +13,8 @@ type ProfileRow = {
   reg_no: string;
   updated_at: string;
   upi_vpa: string | null;
+  /** From 0012. Absent before that migration is applied. */
+  id_status?: 'none' | 'pending' | 'approved' | 'review' | 'rejected';
 };
 
 type OrderRow = {

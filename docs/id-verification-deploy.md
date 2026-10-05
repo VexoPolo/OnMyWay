@@ -11,6 +11,8 @@ Dashboard → **SQL Editor** → **New query**. For each file below: paste the w
 3. `supabase/migrations/0012_id_verification.sql` (ID status, limits, the gate on accept)
 
 Check: **Storage** shows a private bucket `id-cards`; **Integrations → Cron** shows `omw-release-stale`.
+After step 6, replace your ID photo once in the app and check `id_status` goes back to `pending`:
+that confirms the replace trigger (it relies on storage giving each upload a new `version`).
 Files run here don't appear in the migration history list; that's expected.
 
 ## 2. The API key (you set it; it never goes in the repo or the app)
@@ -31,15 +33,17 @@ Files run here don't appear in the migration history list; that's expected.
 
 Same as step 3 with `supabase/functions/purge-id-cards/index.ts`, name `purge-id-cards`, **Verify JWT ON**.
 
-## 5. Daily photo clean-up
+## 5. Daily photo clean-up (pg_cron + pg_net)
 
-**Integrations → Cron → Create job**
-- Name: `omw-purge-id-cards` · Schedule: `0 3 * * *` (03:00 UTC daily)
-- Type: **Supabase Edge Function** → `purge-id-cards`, method **POST**
-- If the form doesn't add an Authorization header itself, add `Authorization: Bearer <anon key>`
-  (Project Settings → API; the public anon key, not the service key). The function only deletes
-  photos already due, so the public key is enough.
-- If it asks to enable `pg_net`, allow it.
+1. **Integrations → Vault → Add new secret**, twice (these stay out of the repo):
+   - `omw_project_url` = `https://fikinghjzmnxgmvnibyk.supabase.co`
+   - `omw_anon_key` = the public anon key (Project Settings → API; not the service key)
+2. **SQL Editor**: paste and run `supabase/migrations/0013_schedule_purge_id_cards.sql`.
+3. Check **Integrations → Cron** shows `omw-purge-id-cards` at `0 3 * * *`. After its first run,
+   **Edge Functions → purge-id-cards → Logs** shows `purge-id-cards deleted N`.
+
+If the project's keys are the new `sb_publishable_…` kind (not a JWT), **Verify JWT** can't accept
+them: tell Claude before step 2 and the call will be switched to the service key from Vault.
 
 ## 6. Try it
 

@@ -38,6 +38,8 @@ create index id_checks_time_idx on private.id_checks (created_at);
 revoke all on private.id_checks from public, anon, authenticated;
 
 -- 4. a new or replaced photo puts the student back to pending --------------------------------
+-- Insert: a first upload. Update: only when the file itself was replaced (storage gives every
+-- upload a new `version`), never for metadata or last-accessed changes.
 create function private.id_card_uploaded() returns trigger
 language plpgsql security definer set search_path = '' as $$
 begin
@@ -50,8 +52,13 @@ begin
 end $$;
 
 create trigger omw_id_card_uploaded
-  after insert or update on storage.objects
+  after insert on storage.objects
   for each row when (new.bucket_id = 'id-cards')
+  execute function private.id_card_uploaded();
+
+create trigger omw_id_card_replaced
+  after update of version on storage.objects
+  for each row when (new.bucket_id = 'id-cards' and old.version is distinct from new.version)
   execute function private.id_card_uploaded();
 
 -- 5. the edge functions' doors (service role only) -------------------------------------------
