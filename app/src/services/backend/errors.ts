@@ -20,6 +20,9 @@ export type ErrorCode =
   | 'code_invalid'
   | 'rate_limited'
   | 'provider_disabled'
+  // after the code was accepted (never shown as a wrong code)
+  | 'id_upload_failed'
+  | 'profile_save_failed'
   // transport
   | 'offline'
   | 'unknown';
@@ -79,6 +82,8 @@ export const ERROR_COPY: Record<ErrorCode, string> = {
   code_invalid: 'That code is wrong or has expired. Request a new one.',
   rate_limited: 'Too many attempts. Wait a minute and try again.',
   provider_disabled: "That sign-in option isn't switched on yet.",
+  id_upload_failed: "Your code worked, but your ID photo didn't upload. Enter the code again to retry.",
+  profile_save_failed: "Your code worked, but your details didn't save. Enter the code again to retry.",
   offline: "Can't reach the server. Check your connection and try again.",
   unknown: 'Something went wrong. Try again.',
 };

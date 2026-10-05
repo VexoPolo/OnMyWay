@@ -40,7 +40,9 @@ export function OtpScreen({ navigation }: Props) {
       const next = await verifyCode(code);
       if (next === 'needs_profile') navigation.replace('Register', { email });
     } catch (e) {
-      setError(ERROR_COPY[toApiError(e).code]);
+      const err = toApiError(e);
+      if (err.code === 'unknown' || err.code.endsWith('_failed')) console.warn('verifyCode', err.code, err.message); // the raw reason
+      setError(ERROR_COPY[err.code]);
       setCode('');
     } finally {
       setBusy(false);

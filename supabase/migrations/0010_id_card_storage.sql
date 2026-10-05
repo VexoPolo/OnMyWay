@@ -7,6 +7,11 @@ values ('id-cards', 'id-cards', false, 5242880, array['image/jpeg', 'image/png',
 on conflict (id) do update
   set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 
+-- re-runnable: safe to paste into the SQL editor again
+drop policy if exists "id card: owner uploads" on storage.objects;
+drop policy if exists "id card: owner reads" on storage.objects;
+drop policy if exists "id card: owner replaces" on storage.objects;
+
 create policy "id card: owner uploads" on storage.objects
   for insert to authenticated
   with check (bucket_id = 'id-cards' and name = (select auth.uid())::text);

@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as api from '../services/backend/api';
 import * as auth from '../services/backend/auth';
-import { ApiError } from '../services/backend/errors';
+import { ApiError, toApiError } from '../services/backend/errors';
 import type { Profile, Role, User } from './types';
 
 /** What the code screen does next once the code checks out. */
@@ -45,9 +45,18 @@ function toUser(p: api.Profile, email: string | undefined, prev: User | null): U
   };
 }
 
+/** Runs only once signed in, so its failures are never about the code: they get their own codes. */
 async function saveRemote(p: Profile) {
-  if (p.idCard) await api.uploadIdCard(p.idCard.uri, p.idCard.mimeType);
-  return api.saveProfile({ regNo: p.regNo.trim().toUpperCase(), name: p.name, phone: p.phone, block: p.block, upi: p.upi });
+  if (p.idCard) {
+    await api.uploadIdCard(p.idCard.uri, p.idCard.mimeType).catch((e) => {
+      throw new ApiError('id_upload_failed', toApiError(e).message);
+    });
+  }
+  return api.saveProfile({ regNo: p.regNo.trim().toUpperCase(), name: p.name, phone: p.phone, block: p.block, upi: p.upi }).catch((e) => {
+    const err = toApiError(e);
+    // reg_no_taken, invalid_profile, offline... keep their own copy; anything vague gets the save message
+    throw err.code === 'unknown' || err.code === 'code_invalid' ? new ApiError('profile_save_failed', err.message) : err;
+  });
 }
 
 export const useAuth = create<AuthState>()(
