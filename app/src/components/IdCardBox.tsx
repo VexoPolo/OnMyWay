@@ -26,6 +26,9 @@ export function IdCardBox({ value, onChange }: { value?: IdCardPhoto; onChange: 
           Clear photo, all corners visible
         </T>
       </Tap>
+      <T kind="caption" style={{ fontSize: 11.5 }}>
+        Used only to confirm you're a VIT student. An AI service reads the card, and if it's unsure a team member may look. Deleted after the check, and within 14 days at most.
+      </T>
     </View>
   );
 }
