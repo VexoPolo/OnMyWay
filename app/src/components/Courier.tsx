@@ -28,9 +28,12 @@ export function walkLoop(step: Animated.Value) {
   );
 }
 
-/** The courier walking in place. Stands still when `active` is false or reduce-motion is on. */
+/** Track only: the courier hops along a short line, fading in and out at the ends. Transform and
+ * opacity only, so it all runs on the native driver. Stands still mid-line when `active` is false
+ * or reduce-motion is on. */
 export function WalkingCourier({ active }: { active: boolean }) {
   const step = useRef(new Animated.Value(0.5)).current;
+  const along = useRef(new Animated.Value(0.5)).current; // 0..1 across the line
   const [reduceMotion, setReduceMotion] = useState(true); // still until we know
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion, () => setReduceMotion(false));
@@ -40,21 +43,37 @@ export function WalkingCourier({ active }: { active: boolean }) {
   useEffect(() => {
     if (!active || reduceMotion) {
       step.setValue(0.5); // legs together
+      along.setValue(0.5);
       return;
     }
-    const loop = walkLoop(step);
+    along.setValue(0);
+    const loop = Animated.parallel([
+      walkLoop(step),
+      Animated.loop(Animated.timing(along, { toValue: 1, duration: 3600, easing: Easing.linear, useNativeDriver: true })),
+    ]);
     loop.start();
     return () => loop.stop();
-  }, [active, reduceMotion, step]);
+  }, [active, reduceMotion, step, along]);
+  const translateX = along.interpolate({ inputRange: [0, 1], outputRange: [0, LINE - FIGURE] });
+  const opacity = along.interpolate({ inputRange: [0, 0.12, 0.88, 1], outputRange: [0, 1, 1, 0] });
+  const hop = step.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, -2, 0] }); // one hop per step
   return (
-    <View style={s.frame} accessible={false} importantForAccessibility="no-hide-descendants">
-      <CourierFigure step={step} />
+    <View style={s.line} accessible={false} importantForAccessibility="no-hide-descendants">
+      <View style={s.ground} />
+      <Animated.View style={[s.frame, { opacity, transform: [{ translateX }, { translateY: hop }] }]}>
+        <CourierFigure step={step} />
+      </Animated.View>
     </View>
   );
 }
 
+const FIGURE = 22;
+const LINE = 72;
+
 const s = StyleSheet.create({
-  frame: { width: 22, height: 28, alignItems: 'center' },
+  line: { width: LINE, height: 28 },
+  ground: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 1, borderRadius: 0.5, backgroundColor: colors.brandA, opacity: 0.25 },
+  frame: { width: FIGURE, height: 28, alignItems: 'center' },
   head: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: colors.brandA },
   body: { width: 2.4, height: 10, backgroundColor: colors.brandA, borderRadius: 1.2 },
   arm: { position: 'absolute', top: 9, width: 2.2, height: 8, borderRadius: 1.1, backgroundColor: colors.brandA },
