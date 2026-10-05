@@ -1,6 +1,7 @@
+import { useIsFocused } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Animated, Easing, StyleSheet, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Screen } from '../../components/Screen';
 import { T } from '../../components/Text';
@@ -45,9 +46,23 @@ export function SearchingScreen({ navigation, route }: Props) {
 
 function Rings() {
   const a = useRef(new Animated.Value(0)).current;
+  const focused = useIsFocused();
+  const [reduceMotion, setReduceMotion] = useState(true); // still until we know
   useEffect(() => {
-    Animated.loop(Animated.timing(a, { toValue: 1, duration: 1800, easing: Easing.out(Easing.quad), useNativeDriver: true })).start();
-  }, [a]);
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion, () => setReduceMotion(false));
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => sub.remove();
+  }, []);
+  // same rules as the courier: paused off-screen, still with reduce motion (rings stay visible)
+  useEffect(() => {
+    if (!focused || reduceMotion) {
+      a.setValue(0.5);
+      return;
+    }
+    const loop = Animated.loop(Animated.timing(a, { toValue: 1, duration: 1800, easing: Easing.out(Easing.quad), useNativeDriver: true }));
+    loop.start();
+    return () => loop.stop();
+  }, [a, focused, reduceMotion]);
   const ring = (delay: number) => {
     const v = Animated.modulo(Animated.add(a, delay), 1);
     return (
