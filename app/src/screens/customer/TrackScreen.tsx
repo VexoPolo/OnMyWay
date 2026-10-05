@@ -115,7 +115,7 @@ export function TrackScreen({ navigation, route }: Props) {
         </Card>
         <Button title="Back to home" variant="ghost" onPress={() => navigation.popToTop()} />
         {/* the server allows cancelling only until pickup (status 'allocated') */}
-        {order.state === 'AGENT_ASSIGNED' && <Button title="Cancel order" variant="ghost" onPress={() => setCancelling(true)} />}
+        {order.state === 'AGENT_ASSIGNED' && <Button title="Cancel order" variant="danger" onPress={() => setCancelling(true)} />}
         <Tap onPress={() => setReporting(true)}>
           <T kind="mono" style={s.link}>
             Something wrong?
