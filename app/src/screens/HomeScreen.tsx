@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -74,6 +74,16 @@ function CourierHome() {
   const [nudge, setNudge] = useState<string>();
   const [picked, setPicked] = useState<string[]>([]); // batch selection, max MAX_BATCH
   const [taking, setTaking] = useState(false);
+  const courierNotice = useOrders((s) => s.courierNotice);
+  const clearCourierNotice = useOrders((s) => s.clearCourierNotice);
+
+  // a customer cancelled one of my jobs: say so once, in the usual nudge
+  useEffect(() => {
+    if (!courierNotice) return;
+    setNudge(courierNotice);
+    clearCourierNotice(); // re-runs this effect with no notice, so no cleanup that would cancel the timer
+    setTimeout(() => setNudge(undefined), 3500);
+  }, [courierNotice, clearCourierNotice]);
 
   const all = Object.values(orders).sort((a, b) => b.createdAt - a.createdAt);
   // your own orders aren't yours to carry (the server answers 'own'), so they stay out of the pool

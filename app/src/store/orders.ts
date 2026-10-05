@@ -93,10 +93,19 @@ function put(o: Order) {
 }
 
 function applyRecords(records: api.OrderRecord[], replace: boolean) {
+  const u = me();
   useOrders.setState((s) => {
     const orders: Record<string, Order> = replace ? {} : { ...s.orders };
-    for (const r of records) orders[r.id] = toAppOrder(r, s.orders[r.id]);
-    return { orders };
+    let courierNotice = s.courierNotice;
+    for (const r of records) {
+      const prev = s.orders[r.id];
+      // my job, cancelled by the customer since we last looked
+      if (u && prev?.courierId === u.id && prev.state !== 'CANCELLED' && r.state === 'CANCELLED') {
+        courierNotice = 'The customer cancelled this order.';
+      }
+      orders[r.id] = toAppOrder(r, prev);
+    }
+    return { orders, courierNotice };
   });
   void loadPrivate();
 }
@@ -247,6 +256,9 @@ export interface NewOrderInput {
 
 interface OrdersState {
   orders: Record<string, Order>;
+  /** Courier: a one-off line for Home, e.g. a customer cancelled their job. Not persisted. */
+  courierNotice?: string;
+  clearCourierNotice: () => void;
   /** Server price per size, from quote_fare. Missing until loaded. */
   fares: Partial<Record<PackageSize, number>>;
   loadFares: () => Promise<void>;
@@ -406,9 +418,10 @@ export const useOrders = create<OrdersState>()(
         fire(orderId, local, () => api.reportOrder(orderId, reason, note));
       },
 
+      clearCourierNotice: () => set({ courierNotice: undefined }),
       reset: () => {
         for (const k of Object.keys(privateAt)) delete privateAt[k];
-        set({ orders: {} });
+        set({ orders: {}, courierNotice: undefined });
       },
     }),
     {
