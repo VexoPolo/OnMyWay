@@ -7,7 +7,7 @@ import { ApiError, toApiError } from '../services/backend/errors';
 import type { Profile, Role, User } from './types';
 
 /** What the code screen does next once the code checks out. */
-export type VerifyOutcome = 'signed_in' | 'needs_profile';
+export type VerifyOutcome = 'signed_in' | 'needs_profile' | 'needs_id_card';
 
 interface AuthState {
   /** Set once there is a session AND a saved profile. The navigator keys off this. */
@@ -16,12 +16,16 @@ interface AuthState {
   pendingEmail: string | null;
   /** From registration; saved to the server right after the code is verified. */
   pendingProfile: Profile | null;
+  /** Signed in with a profile but no ID card on file (signed up before the ID step). Not persisted. */
+  pendingIdUser: User | null;
   /** Register: emails a code, or saves straight away if this email is already signed in. */
   register: (p: Profile) => Promise<'code_sent' | 'signed_in'>;
   /** Sign in: emails a code. */
   sendCode: (email: string) => Promise<void>;
   /** The code screen. Throws ApiError (code_invalid, reg_no_taken, ...). */
   verifyCode: (code: string) => Promise<VerifyOutcome>;
+  /** After 'needs_id_card': upload the photo (or skip with none) and go into the app. */
+  finishIdCard: (card?: Profile['idCard']) => Promise<void>;
   setRole: (role: Role) => void;
   setOnline: (online: boolean) => void;
   /** Local while typing; saveUpi() persists it when the field is left. */
@@ -65,6 +69,7 @@ export const useAuth = create<AuthState>()(
       user: null,
       pendingEmail: null,
       pendingProfile: null,
+      pendingIdUser: null,
 
       register: async (p) => {
         const email = p.email.trim().toLowerCase();
@@ -97,8 +102,23 @@ export const useAuth = create<AuthState>()(
         // New student: save what they typed on Register. Returning student: load what's on file.
         const profile = pendingProfile ? await saveRemote(pendingProfile) : await api.getMyProfile();
         if (!profile) return 'needs_profile'; // signed in, but never registered
-        set({ user: toUser(profile, email, get().user), pendingEmail: null, pendingProfile: null });
+        const user = toUser(profile, email, get().user);
+        // returning student who signed up before the ID step: ask once per sign-in, never block
+        if (!pendingProfile && !(await api.hasIdCard())) {
+          set({ pendingIdUser: user, pendingEmail: null, pendingProfile: null });
+          return 'needs_id_card';
+        }
+        set({ user, pendingEmail: null, pendingProfile: null });
         return 'signed_in';
+      },
+
+      finishIdCard: async (card) => {
+        if (card) {
+          await api.uploadIdCard(card.uri, card.mimeType).catch((e) => {
+            throw new ApiError('id_upload_failed', toApiError(e).message);
+          });
+        }
+        set((s) => ({ user: s.pendingIdUser, pendingIdUser: null }));
       },
 
       setRole: (role) => set((s) => (s.user ? { user: { ...s.user, role } } : {})),
@@ -118,7 +138,7 @@ export const useAuth = create<AuthState>()(
         }
       },
       signOut: async () => {
-        set({ user: null, pendingEmail: null, pendingProfile: null });
+        set({ user: null, pendingEmail: null, pendingProfile: null, pendingIdUser: null });
         await auth.signOut().catch((e) => console.warn('signOut', e));
       },
     }),

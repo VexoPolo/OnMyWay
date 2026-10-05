@@ -3,10 +3,10 @@ import { useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Field } from '../../components/Field';
+import { IdCardBox, type IdCardPhoto } from '../../components/IdCardBox';
 import { Screen } from '../../components/Screen';
 import { Tap } from '../../components/Tap';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { T } from '../../components/Text';
 import type { AuthStackParams } from '../../navigation/types';
 import { ERROR_COPY, toApiError } from '../../services/backend/errors';
@@ -27,7 +27,7 @@ export function RegisterScreen({ navigation, route }: Props) {
   const [email, setEmail] = useState(route.params?.email ?? '');
   const [phone, setPhone] = useState('');
   const [block, setBlock] = useState<string | null>(null);
-  const [idCard, setIdCard] = useState<{ uri: string; mimeType?: string }>();
+  const [idCard, setIdCard] = useState<IdCardPhoto>();
   const [sheet, setSheet] = useState(false);
   const [busy, setBusy] = useState(false);
   const [regError, setRegError] = useState<string>();
@@ -40,12 +40,6 @@ export function RegisterScreen({ navigation, route }: Props) {
     phone.replace(/\D/g, '').length >= 10 &&
     !!block &&
     !!idCard;
-
-  const pickId = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.6 });
-    const a = res.canceled ? undefined : res.assets[0];
-    if (a) setIdCard({ uri: a.uri, mimeType: a.mimeType ?? undefined });
-  };
 
   const submit = async () => {
     setBusy(true);
@@ -121,18 +115,7 @@ export function RegisterScreen({ navigation, route }: Props) {
         </Tap>
       </View>
 
-      <View style={{ gap: 6 }}>
-        <T kind="eyebrow">ID card</T>
-        <Tap onPress={pickId} style={[s.upload, idCard && s.uploadOn]}>
-          <View style={s.uploadIcon}>
-            <Ionicons name={idCard ? 'checkmark' : 'camera-outline'} size={20} color={idCard ? colors.brandDark : colors.ink} />
-          </View>
-          <T style={{ fontSize: 13.5, fontFamily: fonts.bodyMedium }}>{idCard ? 'ID attached — tap to change' : 'Upload a photo of your ID'}</T>
-          <T kind="caption" style={{ fontSize: 11.5 }}>
-            Clear photo, all corners visible
-          </T>
-        </Tap>
-      </View>
+      <IdCardBox value={idCard} onChange={setIdCard} />
 
       <View style={s.trust}>
         <Ionicons name="lock-closed" size={14} color={colors.brandDark} />
@@ -245,18 +228,6 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  upload: {
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: colors.line,
-    borderRadius: radius.card,
-    paddingVertical: 22,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    gap: 8,
-  },
-  uploadOn: { borderColor: colors.brandB, borderStyle: 'solid' },
-  uploadIcon: { width: 38, height: 38, borderRadius: 10, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   trust: {
     flexDirection: 'row',
     gap: 8,

@@ -340,3 +340,15 @@ export async function uploadIdCard(localUri: string, mimeType = 'image/jpeg'): P
   const { error } = await db.storage.from('id-cards').upload(uid, body, { contentType: mimeType, upsert: true });
   if (error) throw toApiError(error);
 }
+
+/** Has the signed-in student uploaded an ID card? Unknown (offline...) counts as yes: never block sign-in on it. */
+export async function hasIdCard(): Promise<boolean> {
+  const uid = (await db.auth.getSession()).data.session?.user.id;
+  if (!uid) return true;
+  try {
+    const { data } = await db.storage.from('id-cards').exists(uid); // false only on a real 404
+    return data;
+  } catch {
+    return true;
+  }
+}
