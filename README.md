@@ -60,8 +60,12 @@ Build order:
 
 ## Status
 
-- Design canvas (6 artboards), technical summary, landing page: **done**
-- The app itself: **not started** — see Priority above
+Prototype in active development. Not production-ready.
+
+## Contributors
+
+- [@Skylinebotlang](https://github.com/Skylinebotlang)
+- [@VexoPolo](https://github.com/VexoPolo)
 
 ## Folders
 
