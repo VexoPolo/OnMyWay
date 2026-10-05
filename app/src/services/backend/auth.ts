@@ -82,7 +82,8 @@ export function onAuthChange(cb: (session: Session | null) => void): () => void 
   return () => data.subscription.unsubscribe();
 }
 
+/** This phone only: the student's other devices stay signed in. */
 export async function signOut(): Promise<void> {
-  const { error } = await db.auth.signOut();
+  const { error } = await db.auth.signOut({ scope: 'local' });
   if (error) throw toApiError(error);
 }

@@ -158,7 +158,8 @@ export const useAuth = create<AuthState>()(
 export function startAuthWatch(): () => void {
   const check = (sessionUserId: string | undefined) => {
     const u = useAuth.getState().user;
-    if (u && u.id !== sessionUserId) useAuth.setState({ user: null });
+    // same as the Sign out button; orders.ts clears the cached orders when user goes null
+    if (u && u.id !== sessionUserId) useAuth.setState({ user: null, pendingEmail: null, pendingProfile: null, pendingIdUser: null });
   };
   auth.getSession().then((s) => check(s?.user.id));
   return auth.onAuthChange((s) => check(s?.user.id));

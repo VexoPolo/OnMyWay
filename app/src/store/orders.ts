@@ -432,3 +432,8 @@ export const useOrders = create<OrdersState>()(
     },
   ),
 );
+
+// Signed out for any reason (button, expired or revoked session): the next student starts clean.
+useAuth.subscribe((s, prev) => {
+  if (prev.user && !s.user) useOrders.getState().reset();
+});
