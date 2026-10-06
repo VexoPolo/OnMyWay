@@ -11,18 +11,22 @@ Dashboard → **SQL Editor** → **New query**. For each file: paste the whole f
 2. `supabase/migrations/0011_schedule_release_stale.sql` (pg_cron + the 5-minute job)
 3. `supabase/migrations/0012_id_verification.sql` (ID status, limits, gate on accept)
 4. `supabase/migrations/0014_id_barcode_review.sql` (auto-approve switch, reviewer decision)
+5. `supabase/migrations/0015_id_stuck_pending.sql` (every 15 min: pending over an hour -> review, `check_timeout`)
 
-Check: **Storage** shows a private bucket `id-cards`; **Integrations → Cron** shows `omw-release-stale`.
+Check: **Storage** shows a private bucket `id-cards`; **Integrations → Cron** shows `omw-release-stale` and `omw-id-stuck-pending`.
 Files run here don't appear in the migration history list; that's expected.
 
 ## 2. Function `verify-id`
 
 1. **Edge Functions** → **Deploy a new function** → **Via Editor**.
-2. Name: `verify-id`. Replace the sample code with all of `supabase/functions/verify-id/index.ts`. **Deploy**.
-3. Open the function → **Details** → **Verify JWT** must be **ON**. Save.
+2. Name: `verify-id`. Replace the sample code with all of `supabase/functions/verify-id/index.ts`.
+3. In the editor, add a second file named exactly `zxing_reader_wasm.ts` and paste all of
+   `supabase/functions/verify-id/zxing_reader_wasm.ts` into it (one long line, about 1.3 MB: the
+   barcode reader). **Deploy**. If the editor won't take a file that size, stop and say so.
+4. Open the function → **Details** → **Verify JWT** must be **ON**. Save.
 
-No secrets to add. The function downloads one public file, the pinned barcode reader, and checks
-its SHA-256 before using it. The photo never leaves the project.
+No secrets to add, and nothing is fetched at runtime: the barcode reader is inside the function and
+its SHA-256 is checked before use. The photo never leaves the project.
 
 ## 3. Function `purge-id-cards`
 
