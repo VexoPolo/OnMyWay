@@ -1,4 +1,5 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import type { OrderState, PackageSize } from '../../store/types';
 import type { PickupPoint } from '../mock';
 import { db } from './client';
@@ -343,12 +344,28 @@ export async function reportOrder(orderId: string, reason: string, note?: string
  * Upload (or replace) the signed-in student's ID card photo. Private bucket, file named by
  * their auth id; only they can read it back (supabase/migrations/0010_id_card_storage.sql).
  */
-export async function uploadIdCard(localUri: string, mimeType = 'image/jpeg'): Promise<void> {
+export async function uploadIdCard(localUri: string): Promise<void> {
   const uid = (await db.auth.getSession()).data.session?.user.id;
   if (!uid) throw new ApiError('not_signed_in', 'not signed in');
-  const body = await (await fetch(localUri)).arrayBuffer();
-  const { error } = await db.storage.from('id-cards').upload(uid, body, { contentType: mimeType, upsert: true });
+  const jpeg = await idCardJpeg(localUri);
+  const body = await (await fetch(jpeg)).arrayBuffer();
+  const { error } = await db.storage.from('id-cards').upload(uid, body, { contentType: 'image/jpeg', upsert: true });
   if (error) throw toApiError(error);
+}
+
+const ID_MAX_SIDE = 1600; // px on the longer side: plenty for the barcode, quick for the server to read
+
+/** Any picked photo (HEIC, WebP, PNG, huge JPEG) -> a JPEG the server's barcode reader can decode. */
+async function idCardJpeg(uri: string): Promise<string> {
+  const original = await ImageManipulator.manipulate(uri).renderAsync();
+  const { width, height } = original;
+  const scale = Math.min(1, ID_MAX_SIDE / Math.max(width, height));
+  const image =
+    scale < 1
+      ? await ImageManipulator.manipulate(uri).resize({ width: Math.round(width * scale), height: Math.round(height * scale) }).renderAsync()
+      : original;
+  const saved = await image.saveAsync({ format: SaveFormat.JPEG, compress: 0.8 });
+  return saved.uri;
 }
 
 /** Has the signed-in student uploaded an ID card? Unknown (offline...) counts as yes: never block sign-in on it. */

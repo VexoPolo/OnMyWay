@@ -59,7 +59,7 @@ async function saveRemote(p: Profile) {
   // After the save, so the profile exists when the photo lands (the upload sets id_status to
   // pending) and the check has a profile to compare with. A retry re-saves the same details.
   if (p.idCard) {
-    await api.uploadIdCard(p.idCard.uri, p.idCard.mimeType).catch((e) => {
+    await api.uploadIdCard(p.idCard.uri).catch((e) => {
       throw new ApiError('id_upload_failed', toApiError(e).message);
     });
     checkIdCard();
@@ -130,7 +130,7 @@ export const useAuth = create<AuthState>()(
 
       finishIdCard: async (card) => {
         if (card) {
-          await api.uploadIdCard(card.uri, card.mimeType).catch((e) => {
+          await api.uploadIdCard(card.uri).catch((e) => {
             throw new ApiError('id_upload_failed', toApiError(e).message);
           });
           checkIdCard();
