@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
   try {
     decision = photo ? await decide(service, uid, s, photo) : ['review', 'check_failed'];
   } catch (e) {
-    console.error('verify-id failed', e instanceof Error ? e.message.slice(0, 40) : 'error');
+    console.error('verify-id failed', errorCode(e));
     decision = ['review', 'check_failed'];
   }
   return json(await finish(service, uid, s, decision));
@@ -160,6 +160,10 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
     () => clearTimeout(t),
   );
 }
+
+/** Our own short codes (wasm_hash, timeout, config, reg_lookup) are logged; any other message
+ * could carry content, so it becomes 'error'. */
+const errorCode = (e: unknown) => (e instanceof Error && /^[a-z_]{1,20}$/.test(e.message) ? e.message : 'error');
 
 /** Upper case, no spaces or separators: "21 bce-1234" -> "21BCE1234". */
 const normReg = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
