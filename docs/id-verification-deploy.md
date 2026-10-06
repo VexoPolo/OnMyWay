@@ -1,65 +1,71 @@
 # ID verification: deploy from the Supabase dashboard
 
-No CLI needed. Do the steps in order. Project: `fikinghjzmnxgmvnibyk`.
+No CLI, no API key. The check reads the barcode on the student's ID card and compares it with the
+reg number they typed. Do the steps in order. Project: `fikinghjzmnxgmvnibyk`.
 
 ## 1. Database (SQL Editor)
 
-Dashboard → **SQL Editor** → **New query**. For each file below: paste the whole file, click **Run**, check it says *Success*.
+Dashboard → **SQL Editor** → **New query**. For each file: paste the whole file, **Run**, check *Success*.
 
-1. `supabase/migrations/0010_id_card_storage.sql` (the private `id-cards` bucket; safe to re-run)
-2. `supabase/migrations/0011_schedule_release_stale.sql` (turns on pg_cron, schedules the 5-minute job)
-3. `supabase/migrations/0012_id_verification.sql` (ID status, limits, the gate on accept)
+1. `supabase/migrations/0010_id_card_storage.sql` (private `id-cards` bucket; safe to re-run)
+2. `supabase/migrations/0011_schedule_release_stale.sql` (pg_cron + the 5-minute job)
+3. `supabase/migrations/0012_id_verification.sql` (ID status, limits, gate on accept)
+4. `supabase/migrations/0014_id_barcode_review.sql` (auto-approve switch, reviewer decision)
 
 Check: **Storage** shows a private bucket `id-cards`; **Integrations → Cron** shows `omw-release-stale`.
-After step 6, replace your ID photo once in the app and check `id_status` goes back to `pending`:
-that confirms the replace trigger (it relies on storage giving each upload a new `version`).
 Files run here don't appear in the migration history list; that's expected.
 
-## 2. The API key (you set it; it never goes in the repo or the app)
-
-1. console.anthropic.com → **API keys** → create a key → copy it. Add a few dollars of credit under **Billing**.
-2. Supabase → **Edge Functions** → **Secrets** → **Add new secret**
-   - Name: `ANTHROPIC_API_KEY`
-   - Value: the key
-   - **Save**. Don't paste it anywhere else.
-
-## 3. Function `verify-id`
+## 2. Function `verify-id`
 
 1. **Edge Functions** → **Deploy a new function** → **Via Editor**.
 2. Name: `verify-id`. Replace the sample code with all of `supabase/functions/verify-id/index.ts`. **Deploy**.
-3. Open the function → **Details** (or **Settings**) → **Verify JWT** must be **ON**. Save.
+3. Open the function → **Details** → **Verify JWT** must be **ON**. Save.
 
-## 4. Function `purge-id-cards`
+No secrets to add. The function downloads one public file, the pinned barcode reader, and checks
+its SHA-256 before using it. The photo never leaves the project.
 
-Same as step 3 with `supabase/functions/purge-id-cards/index.ts`, name `purge-id-cards`, **Verify JWT ON**.
+## 3. Function `purge-id-cards`
 
-## 5. Daily photo clean-up (pg_cron + pg_net)
+Same as step 2 with `supabase/functions/purge-id-cards/index.ts`, name `purge-id-cards`, **Verify JWT ON**.
+
+## 4. Daily photo clean-up (pg_cron + pg_net)
 
 1. **Integrations → Vault → Add new secret**, twice (these stay out of the repo):
    - `omw_project_url` = `https://fikinghjzmnxgmvnibyk.supabase.co`
    - `omw_anon_key` = the public anon key (Project Settings → API; not the service key)
 2. **SQL Editor**: paste and run `supabase/migrations/0013_schedule_purge_id_cards.sql`.
-3. Check **Integrations → Cron** shows `omw-purge-id-cards` at `0 3 * * *`. After its first run,
-   **Edge Functions → purge-id-cards → Logs** shows `purge-id-cards deleted N`.
+3. **Integrations → Cron** shows `omw-purge-id-cards` at `0 3 * * *`.
 
 If the project's keys are the new `sb_publishable_…` kind (not a JWT), **Verify JWT** can't accept
-them: tell Claude before step 2 and the call will be switched to the service key from Vault.
+them: say so before step 2 and the call will be switched to the service key from Vault.
 
-## 6. Try it
+## 5. Test with your own card only (no digits typed or pasted anywhere)
 
-1. In the app, register (or sign in and add an ID card) with a clear photo of a real card.
-2. **Table Editor → profiles**: that row's `id_status` goes `pending` → `approved` / `review` / `rejected`, with `id_reason`.
-3. **Edge Functions → verify-id → Logs**: one line like `verify-id approved -`. No names or numbers appear.
-4. **Storage → id-cards**: after `approved` the photo is gone.
+Leave `id_auto_approve_on_barcode` as `false` for the test.
+
+1. In the app, sign in as yourself and add a clear photo of your ID card, barcode flat and in focus.
+2. **Table Editor → profiles** → your row (find it by your name). Read `id_status` and `id_reason`:
+   - `review` + `barcode_match`: the barcode matched the reg number you typed. It works.
+   - `review` + `barcode_unreadable`: the reader found no reg number; retake the photo closer, in good light.
+   - `rejected` + `reg_mismatch`: the barcode holds a different reg number than your profile.
+3. **Edge Functions → verify-id → Logs**: one line such as `verify-id review barcode_match`. No numbers appear.
+4. Replace the photo once in the app: `id_status` goes back to `pending`, then to the new result.
+5. Finish your own review: run `supabase/scripts/id_review_queue.sql`, copy **your user_id** (not your
+   reg number) from the result, and run
+   `select public.id_review_decide('<your user_id>', 'approved', 'reviewer_approved');`
+   The next purge removes the photo.
+
+## Reviewing
+
+- Queue: run `supabase/scripts/id_review_queue.sql` (read-only, oldest first).
+- Look at the photo in **Storage → id-cards** (file named by the user id).
+- Decide: `select public.id_review_decide('<user_id>', 'approved' | 'rejected', '<reason>');`
+  Reasons are lowercase letters and underscores, e.g. `reviewer_approved`, `reviewer_rejected`.
 
 ## Knobs (SQL Editor)
 
 ```sql
-update public.app_config set value = '300' where key = 'id_checks_daily_cap';
-update public.app_config set value = '["Vellore Institute of Technology"]' where key = 'id_allowed_institutions';
-update public.app_config set value = 'true' where key = 'require_approved_id_for_couriers';  -- couriers need an approved ID
+update public.app_config set value = 'true' where key = 'id_auto_approve_on_barcode';      -- barcode match approves at once
+update public.app_config set value = '300'  where key = 'id_checks_daily_cap';
+update public.app_config set value = 'true' where key = 'require_approved_id_for_couriers'; -- couriers need an approved ID
 ```
-
-A person reviewing a card: open it in **Storage → id-cards**, then set the result, for example
-`update public.profiles set id_status = 'approved', id_reason = null, id_photo_delete_after = now() where reg_no = '…';`
-(`id_photo_delete_after = now()` lets the next clean-up delete the photo.)
