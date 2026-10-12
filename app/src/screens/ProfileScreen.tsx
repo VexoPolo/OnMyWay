@@ -1,4 +1,5 @@
 import type React from 'react';
+import { useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Button } from '../components/Button';
@@ -6,6 +7,7 @@ import { Card } from '../components/Card';
 import { ParcelGlyph, WalkerGlyph } from '../components/Glyphs';
 import { Screen } from '../components/Screen';
 import { T } from '../components/Text';
+import { getMyProfile } from '../services/backend/api';
 import { useAuth } from '../store/auth';
 import { useOrders } from '../store/orders';
 import { brandGradient, colors, fonts, radius, space } from '../theme';
@@ -18,6 +20,13 @@ export function ProfileScreen() {
   const saveUpi = useAuth((s) => s.saveUpi);
   const orders = useOrders((s) => s.orders);
   const resetOrders = useOrders((s) => s.reset);
+
+  // id_status changes on the server (approval comes later): read it fresh on each visit
+  useEffect(() => {
+    getMyProfile()
+      .then((p) => p && useAuth.setState((s) => (s.user?.id === p.id ? { user: { ...s.user, idStatus: p.idStatus } } : {})))
+      .catch(() => {});
+  }, []);
 
   const all = Object.values(orders);
   const delivered = all.filter((o) => o.courierId === user.id && o.state === 'DELIVERED');
@@ -42,12 +51,14 @@ export function ProfileScreen() {
             {user.regNo}
             {user.block ? ` · ${user.block}` : ''}
           </T>
-          <View style={s.verified}>
-            <View style={s.tick} />
-            <T kind="mono" style={{ fontSize: 11.5, color: colors.brandDark }}>
-              Verified student
-            </T>
-          </View>
+          {user.idStatus === 'approved' && (
+            <View style={s.verified}>
+              <View style={s.tick} />
+              <T kind="mono" style={{ fontSize: 11.5, color: colors.brandDark }}>
+                Verified student
+              </T>
+            </View>
+          )}
         </View>
       </View>
 

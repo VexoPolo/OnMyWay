@@ -32,6 +32,8 @@ export interface User extends Partial<Omit<Profile, 'regNo' | 'name'>> {
   name: string;
   role: Role | null; // null until picked on first run
   online: boolean; // courier availability
+  /** profiles.id_status; only 'approved' may show as verified */
+  idStatus?: 'none' | 'pending' | 'approved' | 'review' | 'rejected';
 }
 
 export interface Order {

@@ -43,6 +43,7 @@ function toUser(p: api.Profile, email: string | undefined, prev: User | null): U
     phone: p.phone,
     block: p.block,
     upi: p.upi,
+    idStatus: p.idStatus,
     // role and the online toggle are this phone's choices, not server data
     role: prev?.id === p.id ? prev.role : null,
     online: prev?.id === p.id ? prev.online : false,
@@ -74,9 +75,10 @@ async function needsIdCard(profile: api.Profile): Promise<boolean> {
   return !(await api.hasIdCard());
 }
 
-/** Start the server's ID check. Never blocks sign-in; a failed call leaves the photo for later. */
+/** Start the server's ID check. Never blocks sign-in; a failed call leaves the photo for later.
+ * Silent on failure (no console.warn: in dev that pops a LogBox toast over the screen). */
 function checkIdCard() {
-  api.verifyIdCard().catch((e) => console.warn('verifyIdCard', toApiError(e).code));
+  api.verifyIdCard().catch(() => {});
 }
 
 export const useAuth = create<AuthState>()(
